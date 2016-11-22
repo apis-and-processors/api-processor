@@ -5,20 +5,22 @@
  */
 package com.cdancy.api.processor.annotations;
 
+import com.cdancy.api.processor.instance.InvocationInstance;
+import com.google.common.base.Function;
+
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.inject.Qualifier;
 
 /**
  *
  * @author cdancy
  */
-@Target( { TYPE } )
+@Target( { TYPE, METHOD } )
 @Retention( RUNTIME )
-@Qualifier
-public @interface Api {
-
+public @interface ExecutionHandler {
+   Class<? extends Function<InvocationInstance, ?>> value();
 }

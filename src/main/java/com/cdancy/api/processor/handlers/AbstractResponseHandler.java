@@ -5,6 +5,7 @@
  */
 package com.cdancy.api.processor.handlers;
 
+import com.cdancy.api.processor.wrappers.ResponseWrapper;
 import com.google.common.base.Function;
 
 /**

@@ -5,13 +5,13 @@
  */
 package com.cdancy.api.processor.handlers;
 
-import com.cdancy.api.processor.instance.InvocationInstance;
+import com.cdancy.api.processor.wrappers.FallbackWrapper;
 import com.google.common.base.Function;
 
 /**
  *
  * @author cdancy
  */
-public abstract class AbstractExecutionHandler implements Function<InvocationInstance, Object> {
+public abstract class AbstractFallbackHandler implements Function<FallbackWrapper, Object> {
 
 }

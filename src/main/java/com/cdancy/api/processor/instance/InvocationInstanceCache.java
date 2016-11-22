@@ -17,11 +17,11 @@ import java.util.Map;
  * @author cdancy
  */
 @Singleton
-public class AnnotatedInstanceCache {
+public class InvocationInstanceCache {
    
     private final Map<String, ClassInstance> classCache = Maps.newConcurrentMap();
     
-    public synchronized AnnotatedInstance getInstance(Class clazz, Method method, Object [] args) {  
+    public synchronized InvocationInstance getInstance(Class clazz, Method method, Object [] args) {  
         ClassInstance classInstance = classCache.get(clazz.getName());
         if (classInstance == null) {
             final Invokable newInvokable = InvokableCache.invokable(clazz, method);
@@ -29,6 +29,6 @@ public class AnnotatedInstanceCache {
             classCache.put(clazz.getName(), newClassInstance);
             classInstance = newClassInstance;
         } 
-        return AnnotatedInstance.newInstanceFrom(classInstance, classInstance.get(clazz, method), args);
+        return InvocationInstance.newInstanceFrom(classInstance, classInstance.get(clazz, method), args);
     }
 }

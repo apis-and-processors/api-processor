@@ -14,7 +14,7 @@ import java.lang.annotation.Annotation;
  *
  * @author cdancy
  */
-public class AnnotatedInstance {
+public class InvocationInstance {
     
     private final Class clazz;
     private final ImmutableMap<String, Annotation> classAnnotations;
@@ -24,7 +24,7 @@ public class AnnotatedInstance {
     private final Object [] arguments;
     private final TypeToken returnType;
         
-    public AnnotatedInstance(Class clazz, 
+    public InvocationInstance(Class clazz, 
             ImmutableMap<String, Annotation> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
@@ -78,8 +78,8 @@ public class AnnotatedInstance {
         return returnType;
     }
     
-    public static AnnotatedInstance newInstanceFrom(ClassInstance classInstance, MethodInstance methodInstance, Object [] args) {
-        return new AnnotatedInstance(classInstance.clazz(), 
+    public static InvocationInstance newInstanceFrom(ClassInstance classInstance, MethodInstance methodInstance, Object [] args) {
+        return new InvocationInstance(classInstance.clazz(), 
                 classInstance.annotations(), 
                 methodInstance.method(), 
                 methodInstance.methodAnnotations(), 

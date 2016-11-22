@@ -5,7 +5,7 @@
  */
 package com.cdancy.api.processor.config;
 
-import com.cdancy.api.processor.instance.AnnotatedInstanceCache;
+import com.cdancy.api.processor.instance.InvocationInstanceCache;
 import com.google.inject.AbstractModule;
 
 /**
@@ -16,6 +16,6 @@ public class StandaloneModules extends AbstractModule {
         
     @Override 
     protected void configure() {
-        bind(AnnotatedInstanceCache.class);
+        bind(InvocationInstanceCache.class);
     }
 }

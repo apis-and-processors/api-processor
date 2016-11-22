@@ -5,7 +5,7 @@
  */
 package com.cdancy.api.processor.handlers;
 
-import com.cdancy.api.processor.instance.AnnotatedInstance;
+import com.cdancy.api.processor.instance.InvocationInstance;
 import com.google.inject.Singleton;
 
 /**
@@ -16,7 +16,7 @@ import com.google.inject.Singleton;
 public class DefaultExecutionHandler extends AbstractExecutionHandler {
 
     @Override
-    public ResponseWrapper apply(AnnotatedInstance f) {
-        return ResponseWrapper.newInstance("bears", f.returnType());
+    public Object apply(InvocationInstance f) {
+        return null;
     }
 }

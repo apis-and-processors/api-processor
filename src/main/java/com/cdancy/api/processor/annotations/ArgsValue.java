@@ -5,7 +5,6 @@
  */
 package com.cdancy.api.processor.annotations;
 
-import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -17,7 +16,7 @@ import javax.inject.Qualifier;
  *
  * @author cdancy
  */
-@Target( { FIELD, PARAMETER } )
+@Target( { PARAMETER } )
 @Retention( RUNTIME )
 @Qualifier
 public @interface ArgsValue {
