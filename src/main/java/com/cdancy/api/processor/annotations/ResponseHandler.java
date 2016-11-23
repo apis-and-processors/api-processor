@@ -5,8 +5,7 @@
  */
 package com.cdancy.api.processor.annotations;
 
-import com.cdancy.api.processor.wrappers.ResponseWrapper;
-import com.google.common.base.Function;
+import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -22,5 +21,5 @@ import java.lang.annotation.Target;
 @Target( { TYPE, METHOD } )
 @Retention( RUNTIME )
 public @interface ResponseHandler {
-   Class<? extends Function<ResponseWrapper, ?>> value();
+   Class<? extends AbstractResponseHandler> value();
 }

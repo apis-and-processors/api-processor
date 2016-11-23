@@ -16,28 +16,29 @@ import java.lang.annotation.Annotation;
 public class ParameterInstance {
     
     private final Class clazz;
-    private final ImmutableMap<String, Annotation> parameterAnnotations;
+    private final ImmutableMap<String, Annotation> annotations;
     
-    public ParameterInstance(Class clazz, Annotation[] parameterAnnotations) {
+    public ParameterInstance(Class clazz, Annotation[] annotations) {
         this.clazz = clazz;
         
         ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
-        Lists.newArrayList(parameterAnnotations).stream().forEach( entry -> {
-            mapBuilder.put(entry.getClass().getName(), entry);
+        Lists.newArrayList(annotations).stream().forEach( entry -> {
+            mapBuilder.put(entry.annotationType().getName(), entry);
+
         });
-        this.parameterAnnotations = mapBuilder.build();        
+        this.annotations = mapBuilder.build();        
     }
     
     public Class clazz() {
         return clazz;    
     }
     
-    public ImmutableMap<String, Annotation> parameterAnnotations() {
-        return parameterAnnotations;
+    public ImmutableMap<String, Annotation> annotations() {
+        return annotations;
     }
     
     public <T> T getParameterAnnotation(Class<T> clazz) {
-        Annotation anno = parameterAnnotations().get(clazz.getName());
+        Annotation anno = annotations().get(clazz.getName());
         return (anno != null) ? clazz.cast(anno) : null;
     }
 }

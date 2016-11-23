@@ -6,9 +6,12 @@
 package com.cdancy.api.processor.config;
 
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
-import com.cdancy.api.processor.proxy.ProxyHelper;
+import com.cdancy.api.processor.utils.ProcessorUtils;
+import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.Reflection;
 import com.google.inject.AbstractModule;
+import java.lang.reflect.InvocationHandler;
 import java.util.Set;
 
 /**
@@ -27,8 +30,8 @@ public class ApiRegistrationModule extends AbstractModule {
         
     @Override 
     protected void configure() {
-        apis.stream().forEach( entry -> {
-            bind(entry).toInstance(ProxyHelper.instanceFromInterface(entry, abstractRuntimeInvocationHandler));
+        apis.stream().forEach(entry -> {
+            bind(entry).toInstance(ProcessorUtils.newTypeFrom(entry, abstractRuntimeInvocationHandler));
         });
     }
 }

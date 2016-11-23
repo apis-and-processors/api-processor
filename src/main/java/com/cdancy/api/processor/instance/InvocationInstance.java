@@ -5,10 +5,16 @@
  */
 package com.cdancy.api.processor.instance;
 
+import com.cdancy.api.processor.handlers.AbstractErrorHandler;
+import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
+import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
+import com.cdancy.api.processor.handlers.AbstractResponseHandler;
+import com.cdancy.api.processor.cache.ProcessorCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -23,14 +29,30 @@ public class InvocationInstance {
     private final ImmutableList<ParameterInstance> parameterInstanceCache;
     private final Object [] arguments;
     private final TypeToken returnType;
+    
+    @Nullable
+    private final AbstractExecutionHandler executionHandler;
+    
+    @Nullable
+    private final AbstractErrorHandler errorHandler;
         
-    public InvocationInstance(Class clazz, 
+    @Nullable
+    private final AbstractFallbackHandler fallbackHandler;
+
+    @Nullable
+    private final AbstractResponseHandler responseHandler;
+        
+    private InvocationInstance(Class clazz, 
             ImmutableMap<String, Annotation> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
             ImmutableList<ParameterInstance> parameterInstanceCache,
             Object [] arguments,
-            TypeToken returnType) {
+            TypeToken returnType,
+            AbstractExecutionHandler executionHandler,
+            AbstractErrorHandler errorHandler,
+            AbstractFallbackHandler fallbackHandler,
+            AbstractResponseHandler responseHandler) {
         this.clazz = clazz;
         this.classAnnotations = classAnnotations;
         this.method = method;
@@ -38,6 +60,10 @@ public class InvocationInstance {
         this.parameterInstanceCache = parameterInstanceCache;
         this.arguments = arguments;
         this.returnType = returnType;
+        this.executionHandler = executionHandler;
+        this.errorHandler = errorHandler;
+        this.fallbackHandler = fallbackHandler;
+        this.responseHandler = responseHandler;
     }
     
     public Class clazz() {
@@ -79,12 +105,46 @@ public class InvocationInstance {
     }
     
     public static InvocationInstance newInstanceFrom(ClassInstance classInstance, MethodInstance methodInstance, Object [] args) {
+        
+        Class<? extends AbstractExecutionHandler> executionHandler = (methodInstance.executionHandler() != null) 
+                ? methodInstance.executionHandler() 
+                : classInstance.executionHandler();
+        Class<? extends AbstractErrorHandler> errorHandler = (methodInstance.errorHandler() != null) 
+                ? methodInstance.errorHandler() 
+                : classInstance.errorHandler();
+        Class<? extends AbstractFallbackHandler> fallbackHandler = (methodInstance.fallbackHandler() != null) 
+                ? methodInstance.fallbackHandler() 
+                : classInstance.fallbackHandler();
+        Class<? extends AbstractResponseHandler> responseHandler = (methodInstance.responseHandler() != null) 
+                ? methodInstance.responseHandler() 
+                : classInstance.responseHandler();
+        
         return new InvocationInstance(classInstance.clazz(), 
                 classInstance.annotations(), 
                 methodInstance.method(), 
-                methodInstance.methodAnnotations(), 
+                methodInstance.annotations(), 
                 methodInstance.parameterInstanceCache(),
                 args,
-                methodInstance.returnType());
+                methodInstance.returnType(), 
+                executionHandler != null ? ProcessorCache.typeFrom(executionHandler) : null, 
+                errorHandler != null ? ProcessorCache.typeFrom(errorHandler) : null, 
+                fallbackHandler != null ? ProcessorCache.typeFrom(fallbackHandler) : null, 
+                responseHandler != null ? ProcessorCache.typeFrom(responseHandler) : null);
+    }
+
+    public AbstractExecutionHandler executionHandler() {
+        return this.executionHandler;
+    }
+
+    public AbstractErrorHandler errorHandler() {
+        return this.errorHandler;
+    }
+
+    public AbstractFallbackHandler fallbackHandler() {
+        return this.fallbackHandler;
+    }
+
+    public AbstractResponseHandler responseHandler() {
+        return this.responseHandler;
     }
 }

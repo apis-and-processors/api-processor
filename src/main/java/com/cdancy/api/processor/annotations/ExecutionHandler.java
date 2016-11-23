@@ -5,8 +5,7 @@
  */
 package com.cdancy.api.processor.annotations;
 
-import com.cdancy.api.processor.instance.InvocationInstance;
-import com.google.common.base.Function;
+import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -22,5 +21,5 @@ import java.lang.annotation.Target;
 @Target( { TYPE, METHOD } )
 @Retention( RUNTIME )
 public @interface ExecutionHandler {
-   Class<? extends Function<InvocationInstance, ?>> value();
+   Class<? extends AbstractExecutionHandler> value();
 }

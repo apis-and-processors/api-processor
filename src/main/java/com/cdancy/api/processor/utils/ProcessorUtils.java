@@ -5,21 +5,20 @@
  */
 package com.cdancy.api.processor.utils;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.collect.Sets;
+import com.google.common.reflect.Reflection;
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import java.lang.reflect.InvocationHandler;
+import java.util.Set;
+
 /**
  *
  * @author cdancy
  */
-import static com.google.common.base.Preconditions.checkNotNull;
-import com.google.common.collect.Sets;
+public class ProcessorUtils {
 
-import com.google.inject.Singleton;
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import java.util.Set;
-
-@Singleton
-public class ClasspathUtils {
-    
-    public static Set<Class> classesAnnotatedWith(Class annotation) {
+    public static Set<Class> findClassesAnnotatedWith(Class annotation) {
         checkNotNull(annotation, "class annotataion cannot be null");
         Set<Class> builtApis = Sets.newHashSet();
         new FastClasspathScanner().
@@ -27,5 +26,11 @@ public class ClasspathUtils {
                     builtApis.add(c);
                 }).scan();
         return builtApis;
+    }
+    
+    public static <T> T newTypeFrom(Class<T> proxyInterface, InvocationHandler invocationHandler) {
+        checkNotNull(proxyInterface, "proxyInterface cannot be null");
+        checkNotNull(invocationHandler, "invocationHandler cannot be null");
+        return Reflection.newProxy(proxyInterface, invocationHandler);       
     }
 }

@@ -6,18 +6,12 @@
 package com.cdancy.api.processor.handlers;
 
 import com.cdancy.api.processor.wrappers.ErrorWrapper;
+import com.google.common.base.Function;
 
 /**
  *
  * @author cdancy
  */
-public interface AbstractErrorHandler {
-    
-    /**
-     * Handle errors and propagate exception possibly as a new wrapped exception
-     * 
-     * @param errorWrapper object which wraps the exec-context and exception together
-     * @throws java.lang.Exception
-     */
-    void handleAndPropagate(ErrorWrapper errorWrapper) throws Exception;
+public abstract class AbstractErrorHandler implements Function<ErrorWrapper, Throwable> {
+
 }

@@ -12,10 +12,6 @@ import com.cdancy.api.processor.handlers.DefaultExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
 import com.cdancy.api.processor.handlers.DefaultRuntimeInvocationHandler;
-import com.cdancy.api.processor.wrappers.ResponseWrapper;
-import com.cdancy.api.processor.instance.InvocationInstance;
-import com.cdancy.api.processor.wrappers.FallbackWrapper;
-import com.google.common.base.Function;
 import com.google.inject.AbstractModule;
 import javax.annotation.Nullable;
 
@@ -30,14 +26,14 @@ public class HandlerRegistrationModule extends AbstractModule {
     private final Class errorHandler;
     private final Class fallbackHandler;
     
-    public HandlerRegistrationModule(@Nullable Class<? extends Function<InvocationInstance, ?>> executionHandler, 
-            @Nullable Class<? extends Function<ResponseWrapper, ?>> responseHandler,
+    public HandlerRegistrationModule(@Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
             @Nullable Class<? extends AbstractErrorHandler> errorHandler,
-            @Nullable Class<? extends Function<FallbackWrapper, ?>> fallbackHandler) {
+            @Nullable Class<? extends AbstractFallbackHandler> fallbackHandler,
+            @Nullable Class<? extends AbstractResponseHandler> responseHandler) {
         this.executionHandler = executionHandler;
-        this.responseHandler = responseHandler;
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
+        this.responseHandler = responseHandler;
     }
             
     @Override 
