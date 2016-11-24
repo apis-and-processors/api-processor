@@ -42,7 +42,7 @@ public class DefaultRuntimeInvocationHandler extends AbstractRuntimeInvocationHa
     protected Object handleInvocation(Object source, Method method, Object[] args) {
         
         // 1.) Get/Build InvocationInstance from cache.
-        final InvocationInstance invocationInstance = ProcessorCache.invocationInstanceFrom(source.getClass(), method, args);
+        final InvocationInstance invocationInstance = ProcessorCache.invocationInstanceFrom(method, args);
         
         // 2.) Initialize handlers, if present, for runtime execution
         AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) ? 
