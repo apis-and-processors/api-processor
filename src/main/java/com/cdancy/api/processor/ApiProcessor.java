@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 
 import java.util.Set;
 import java.util.logging.Level;
@@ -50,7 +49,6 @@ public class ApiProcessor {
     
         private final Logger logger = Logger.getLogger(ApiProcessor.class.getName());
         private final Set<Class> apis = Sets.newHashSet();
-        //private final List<Module> modules = Lists.newArrayList();
         private boolean scanClasspath = false;
         
         private Class<? extends AbstractExecutionHandler> executionHandler;
@@ -62,11 +60,6 @@ public class ApiProcessor {
             checkNotNull(clazz, "api class cannot be null");
             checkArgument(clazz.isInterface(), "api class must be an interface");
             this.apis.add(clazz);
-            return this;
-        }
-        
-        public Builder modules(Module module) {
-            //this.modules.add(checkNotNull(module, "module cannot be null"));
             return this;
         }
                 

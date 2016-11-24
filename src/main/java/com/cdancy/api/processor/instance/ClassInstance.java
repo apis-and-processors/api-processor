@@ -14,12 +14,9 @@ import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.ProcessorHandles;
-import com.cdancy.api.processor.cache.ProcessorCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.reflect.Invokable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
@@ -89,17 +86,6 @@ public class ClassInstance implements ProcessorHandles {
     public <T> T getAnnotation(Class<T> clazz) {
         Annotation anno = annotations.get(clazz.getName());
         return (anno != null) ? clazz.cast(anno) : null;
-    }
-    
-    public MethodInstance get(Class clazz, Method method) {
-        MethodInstance methodInstance = methodInstanceCache.get(method.getName());
-        if (methodInstance == null) {
-            Invokable invokable = ProcessorCache.invokableFrom(clazz, method);            
-            final MethodInstance newMethodInstance = new MethodInstance(invokable.getName(), invokable.getAnnotations(), invokable.getParameters(), invokable.getReturnType());
-            methodInstanceCache.put(method.getName(), newMethodInstance);
-            methodInstance = newMethodInstance;
-        } 
-        return methodInstance;
     }
 
     @Override

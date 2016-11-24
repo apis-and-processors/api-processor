@@ -103,6 +103,7 @@ public class ProcessorCache {
     
     public static InvocationInstance invocationInstanceFrom(Method method, Object [] args) {  
         ClassInstance classInstance = classInstanceFrom(method);
-        return InvocationInstance.newInstanceFrom(classInstance, classInstance.get(method.getDeclaringClass(), method), args);
+        MethodInstance methodInstance = methodInstanceFrom(method);
+        return InvocationInstance.newInstanceFrom(classInstance, methodInstance, args);
     }
 }
