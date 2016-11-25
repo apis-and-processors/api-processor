@@ -74,26 +74,55 @@ public class ApiProcessor {
             return this;
         }
                 
+        /**
+         * Whether to scan classpath for Interfaces annotated with @Api. Defaults to false.
+         * 
+         * @return this Builder.
+         */
         public Builder scanClasspath() {
             this.scanClasspath = true;
             return this;
         }
         
+        /**
+         * Set the global ExecutionHandler. Optional and defaults to null.
+         * 
+         * @param executionHandler global ExecutionHandler.
+         * @return this Builder.
+         */
         public Builder executionHandler(Class<? extends AbstractExecutionHandler> executionHandler) {
             this.executionHandler = checkNotNull(executionHandler, "executionHandler cannot be null");
             return this;
         }
         
+        /**
+         * Set the global ErrorHandler. Optional and defaults to null.
+         * 
+         * @param errorHandler global ErrorHandler.
+         * @return this Builder.
+         */
         public Builder errorHandler(Class<? extends AbstractErrorHandler> errorHandler) {
             this.errorHandler = checkNotNull(errorHandler, "errorHandler cannot be null");
             return this;
         }
-               
+           
+        /**
+         * Set the global FallbackHandler. Optional and defaults to null.
+         * 
+         * @param fallbackHandler global FallbackHandler.
+         * @return this Builder.
+         */
         public Builder fallbackHandler(Class<? extends AbstractFallbackHandler> fallbackHandler) {
             this.fallbackHandler = checkNotNull(fallbackHandler, "fallbackHandler cannot be null");
             return this;
         }
         
+        /**
+         * Set the global ResponseHandler. Optional and defaults to null.
+         * 
+         * @param responseHandler global ResponseHandler.
+         * @return this Builder.
+         */
         public Builder responseHandler(Class<? extends AbstractResponseHandler> responseHandler) {
             this.responseHandler = checkNotNull(responseHandler, "responseHandler cannot be null");
             return this;
