@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.cdancy.api.processor;
 
 import com.cdancy.api.processor.annotations.Api;
@@ -22,7 +39,7 @@ public class ApiProcessorTest {
     
     class LocalErrorHandler extends AbstractErrorHandler {
         @Override
-        public Throwable apply(ErrorWrapper f) {
+        public Throwable apply(ErrorWrapper object) {
             System.out.println("Hello local error");
             return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
@@ -30,7 +47,7 @@ public class ApiProcessorTest {
    
     class LocalExecutionHandler2 extends AbstractExecutionHandler {
         @Override
-        public Object apply(InvocationInstance f) {
+        public Object apply(InvocationInstance object) {
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             return "fish and fries";
         }
@@ -38,7 +55,7 @@ public class ApiProcessorTest {
         
     class LocalExecutionHandler extends AbstractExecutionHandler {
         @Override
-        public Object apply(InvocationInstance f) {
+        public Object apply(InvocationInstance object) {
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             return "Hoagies and Grinders";
         }
@@ -46,14 +63,14 @@ public class ApiProcessorTest {
         
     class LocalFallbackHandler extends AbstractFallbackHandler {
         @Override
-        public Object apply(FallbackWrapper f) {
+        public Object apply(FallbackWrapper object) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
             
     class LocalResponseHandler extends AbstractResponseHandler {
         @Override
-        public Object apply(ResponseWrapper f) {
+        public Object apply(ResponseWrapper object) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }

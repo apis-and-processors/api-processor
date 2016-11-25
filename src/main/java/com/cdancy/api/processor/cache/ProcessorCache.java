@@ -1,8 +1,20 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cdancy.api.processor.cache;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -24,22 +36,29 @@ import sun.reflect.ReflectionFactory;
 
 /**
  *
- * @author cdancy
+ * @author cdancy.
  */
 public class ProcessorCache {
     
-    private final static Cache<String, Object> cache = CacheBuilder.newBuilder()
-        .maximumSize(1000)
-        .weakValues()
-        .build();
+    private static final Cache<String, Object> cache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .weakValues()
+            .build();
     
-    private final static Logger logger = Logger.getLogger(ProcessorCache.class.getName());
+    private static final Logger logger = Logger.getLogger(ProcessorCache.class.getName());
 
-    private final static String CLASS_INSTANCE_PREFIX = "ClassInstance@";
-    private final static String INVOKABLE_PREFIX = "Invokable@";
-    private final static String METHOD_INSTANCE_PREFIX = "MethodInstance@";
-    private final static String TYPE_PREFIX = "Type@";
+    private static final String CLASS_INSTANCE_PREFIX = "ClassInstance@";
+    private static final String INVOKABLE_PREFIX = "Invokable@";
+    private static final String METHOD_INSTANCE_PREFIX = "MethodInstance@";
+    private static final String TYPE_PREFIX = "Type@";
     
+    /**
+     * Create a new Type from the passed bean class (i.e. zero-arg constuctor only) definition.
+     * 
+     * @param <T> Type of class.
+     * @param beanClass zero-arg constructor bean class definition.
+     * @return newly created Type.
+     */
     public static <T> T typeFrom(Class<T> beanClass) {
         checkNotNull(beanClass, "clazz cannot be null");
         
@@ -63,6 +82,13 @@ public class ProcessorCache {
         } 
     }
     
+    /**
+     * Create a new Invokable from the passed clazz and method definitions.
+     * 
+     * @param clazz class definition
+     * @param method method definition.
+     * @return newly created Invokable.
+     */
     public static Invokable invokableFrom(Class clazz, Method method) {
         String key = INVOKABLE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName();
         try {
@@ -75,6 +101,12 @@ public class ProcessorCache {
         } 
     }
     
+    /**
+     * Create a new MethodInstance from the passed method definition.
+     * 
+     * @param method method definition.
+     * @return newly created MethodInstance.
+     */
     public static MethodInstance methodInstanceFrom(Method method) {
         String key = METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName(); 
         try {
@@ -88,6 +120,12 @@ public class ProcessorCache {
         } 
     }
         
+    /**
+     * Create a new ClassInstance from the passed method definition.
+     * 
+     * @param method method definition.
+     * @return newly created ClassInstance.
+     */
     public static ClassInstance classInstanceFrom(Method method) {
         String key = CLASS_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName(); 
         try {
@@ -101,6 +139,13 @@ public class ProcessorCache {
         } 
     }
     
+    /**
+     * Create a new InvocationInstance from the passed method definition and argument list.
+     * 
+     * @param method method definition.
+     * @param args argument list.
+     * @return newly created InvocationInstance.
+     */
     public static InvocationInstance invocationInstanceFrom(Method method, Object [] args) {  
         ClassInstance classInstance = classInstanceFrom(method);
         MethodInstance methodInstance = methodInstanceFrom(method);

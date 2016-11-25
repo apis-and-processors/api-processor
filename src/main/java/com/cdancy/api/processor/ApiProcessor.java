@@ -1,9 +1,24 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cdancy.api.processor;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.cdancy.api.processor.annotations.Api;
 import com.cdancy.api.processor.config.ApiRegistrationModule;
@@ -14,8 +29,6 @@ import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
 import com.cdancy.api.processor.utils.ProcessorUtils;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
@@ -27,7 +40,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author cdancy
+ * @author cdancy.
  */
 public class ApiProcessor {
     
@@ -57,8 +70,6 @@ public class ApiProcessor {
         private Class<? extends AbstractResponseHandler> responseHandler;
         
         public Builder api(Class clazz) {
-            checkNotNull(clazz, "api class cannot be null");
-            checkArgument(clazz.isInterface(), "api class must be an interface");
             this.apis.add(clazz);
             return this;
         }
@@ -88,9 +99,14 @@ public class ApiProcessor {
             return this;
         }
         
+        /**
+         * Build an ApiProcessor from passed build parameters.
+         * 
+         * @return newly created ApiProcessor.
+         */
         public ApiProcessor build() {
             
-            // 1.) Gather all Api's passed in and on classpath
+            // 1.) Gather all Api's passed in and on classpath.
             Set<Class> builtApis = Sets.newHashSet(apis);
             if (this.scanClasspath) {
                 builtApis.addAll(ProcessorUtils.findClassesAnnotatedWith(Api.class));
@@ -101,8 +117,9 @@ public class ApiProcessor {
                 logger.log(Level.INFO, "Found Api @ {0}", entry.getName());
             });
 
-            // 2.) Create injector from modules and build ApiProcessor
-            final Injector handlerInjector = Guice.createInjector(new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler));
+            // 2.) Create injector from modules and build ApiProcessor.
+            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
+            final Injector handlerInjector = Guice.createInjector(hrm);
             AbstractRuntimeInvocationHandler apiProcessorInvocationHandler = handlerInjector.getInstance(AbstractRuntimeInvocationHandler.class);
             final Injector apiInjector = handlerInjector.createChildInjector(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler));
             return new ApiProcessor(apiInjector);

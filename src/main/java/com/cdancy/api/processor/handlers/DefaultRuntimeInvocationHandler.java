@@ -1,8 +1,20 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cdancy.api.processor.handlers;
 
 import com.cdancy.api.processor.wrappers.ResponseWrapper;
@@ -18,7 +30,7 @@ import javax.annotation.Nullable;
 
 /**
  *
- * @author cdancy
+ * @author cdancy.
  */
 @Singleton
 public class DefaultRuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
@@ -45,18 +57,18 @@ public class DefaultRuntimeInvocationHandler extends AbstractRuntimeInvocationHa
         final InvocationInstance invocationInstance = ProcessorCache.invocationInstanceFrom(method, args);
         
         // 2.) Initialize handlers, if present, for runtime execution
-        AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) ? 
-                invocationInstance.executionHandler() : 
-                abstractExecutionHandler;
-        AbstractErrorHandler runtimeErrorHandler = (invocationInstance.errorHandler() != null) ? 
-                invocationInstance.errorHandler() : 
-                abstractErrorHandler;
-        AbstractFallbackHandler runtimeFallbackHandler = (invocationInstance.fallbackHandler() != null) ? 
-                invocationInstance.fallbackHandler() : 
-                abstractFallbackHandler;
-        AbstractResponseHandler runtimeResponseHandler = (invocationInstance.responseHandler() != null) ? 
-                invocationInstance.responseHandler() : 
-                abstractResponseHandler;
+        final AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) 
+                ? invocationInstance.executionHandler() 
+                : abstractExecutionHandler;
+        final AbstractErrorHandler runtimeErrorHandler = (invocationInstance.errorHandler() != null) 
+                ? invocationInstance.errorHandler() 
+                : abstractErrorHandler;
+        final AbstractFallbackHandler runtimeFallbackHandler = (invocationInstance.fallbackHandler() != null) 
+                ? invocationInstance.fallbackHandler() 
+                : abstractFallbackHandler;
+        final AbstractResponseHandler runtimeResponseHandler = (invocationInstance.responseHandler() != null) 
+                ? invocationInstance.responseHandler() 
+                : abstractResponseHandler;
         
         
         // 3.) Pass InvocationInstance to ExecutionHandler for runtime execution.
@@ -76,7 +88,7 @@ public class DefaultRuntimeInvocationHandler extends AbstractRuntimeInvocationHa
                     invocationException = possibleThrowable;
                 }
             } catch (Exception propagatedException) {
-                  invocationException = propagatedException;
+                invocationException = propagatedException;
             }
         }
         

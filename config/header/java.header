@@ -14,16 +14,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.cdancy.api.processor.handlers;
-
-import com.cdancy.api.processor.wrappers.ErrorWrapper;
-import com.google.common.base.Function;
-
-/**
- *
- * @author cdancy.
- */
-public abstract class AbstractErrorHandler implements Function<ErrorWrapper, Throwable> {
-
-}

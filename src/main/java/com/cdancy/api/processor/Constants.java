@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.cdancy.api.processor;
 
 
@@ -34,7 +35,7 @@ public final class Constants {
      * Long property.
      * <p/>
      * Commands are retried, if the problem on the server side was a resolvable conflict. However,
-     * the maximum tries of a single command is bounded. If {@link #PROPERTY_MAX_RETRIES} is greater
+     * the maximum tries of a single command is bounded. If {@link #RETRY_COUNT} is greater
      * than zero, this property is used to determine the start delay. The delay is based on exponential
      * backoff algorithm. Default value for this property is 50 milliseconds.
      */

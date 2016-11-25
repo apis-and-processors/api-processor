@@ -1,8 +1,20 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.cdancy.api.processor.config;
 
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
@@ -17,7 +29,7 @@ import javax.annotation.Nullable;
 
 /**
  *
- * @author cdancy
+ * @author cdancy.
  */
 public class HandlerRegistrationModule extends AbstractModule {
         
@@ -26,6 +38,14 @@ public class HandlerRegistrationModule extends AbstractModule {
     private final Class errorHandler;
     private final Class fallbackHandler;
     
+    /**
+     * Create HandlerRegistrationModule from the potentially non-null classes.
+     * 
+     * @param executionHandler default ExecutionHandler to set.
+     * @param errorHandler default ErrorHandler to set.
+     * @param fallbackHandler default FallbackHandler to set.
+     * @param responseHandler default ResponseHandler to set.
+     */
     public HandlerRegistrationModule(@Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
             @Nullable Class<? extends AbstractErrorHandler> errorHandler,
             @Nullable Class<? extends AbstractFallbackHandler> fallbackHandler,
@@ -41,14 +61,19 @@ public class HandlerRegistrationModule extends AbstractModule {
 
         bind(AbstractRuntimeInvocationHandler.class).to(DefaultRuntimeInvocationHandler.class);
 
-        Class defaultExecutionHandler = (executionHandler != null) ? executionHandler : DefaultExecutionHandler.class;
+        Class defaultExecutionHandler = (executionHandler != null) 
+                ? executionHandler 
+                : DefaultExecutionHandler.class;
         bind(AbstractExecutionHandler.class).to(defaultExecutionHandler);
         
-        if (responseHandler != null)
+        if (responseHandler != null) {
             bind(AbstractResponseHandler.class).to(responseHandler);
-        if (errorHandler != null)
+        }
+        if (errorHandler != null) {
             bind(AbstractErrorHandler.class).to(errorHandler);
-        if (fallbackHandler != null) 
-            bind(AbstractFallbackHandler.class).to(fallbackHandler);     
+        }
+        if (fallbackHandler != null) {
+            bind(AbstractFallbackHandler.class).to(fallbackHandler);
+        }
     }
 }
