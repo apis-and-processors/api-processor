@@ -25,16 +25,16 @@ public final class Constants {
 
     /**
      * Integer property.
-     * <p/>
-     * Commands are retried, if the problem on the server side was a resolvable conflict. However,
+     * 
+     * <p>Commands are retried, if the problem on the server side was a resolvable conflict. However,
      * the maximum tries of a single command is bounded.
      */
     public static final String RETRY_COUNT = "api-processor.retry-count";
 
     /**
      * Long property.
-     * <p/>
-     * Commands are retried, if the problem on the server side was a resolvable conflict. However,
+     * 
+     * <p>Commands are retried, if the problem on the server side was a resolvable conflict. However,
      * the maximum tries of a single command is bounded. If {@link #RETRY_COUNT} is greater
      * than zero, this property is used to determine the start delay. The delay is based on exponential
      * backoff algorithm. Default value for this property is 50 milliseconds.
