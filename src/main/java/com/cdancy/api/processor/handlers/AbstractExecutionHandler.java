@@ -18,7 +18,7 @@
 package com.cdancy.api.processor.handlers;
 
 import com.cdancy.api.processor.instance.InvocationInstance;
-import com.google.common.base.Function;
+import java.util.function.Function;
 
 /**
  *

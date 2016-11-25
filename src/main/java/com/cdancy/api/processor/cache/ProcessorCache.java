@@ -27,9 +27,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.reflect.Invokable;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import sun.reflect.ReflectionFactory;
@@ -38,11 +40,13 @@ import sun.reflect.ReflectionFactory;
  *
  * @author cdancy.
  */
+@Singleton
 public class ProcessorCache {
     
     private static final Cache<String, Object> cache = CacheBuilder.newBuilder()
             .maximumSize(1000)
-            .weakValues()
+            .recordStats()
+            .expireAfterAccess(360000, TimeUnit.MILLISECONDS)
             .build();
     
     private static final Logger logger = Logger.getLogger(ProcessorCache.class.getName());

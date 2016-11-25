@@ -57,7 +57,7 @@ public class ApiProcessorTest {
         @Override
         public Object apply(InvocationInstance object) {
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            return "Hoagies and Grinders";
+            throw new RuntimeException("fish!!!!");
         }
     }
         
@@ -87,14 +87,12 @@ public class ApiProcessorTest {
     
     @Api
     @Args( { "-am" } )
-    @ErrorHandler(LocalErrorHandler.class)
     @ExecutionHandler(LocalExecutionHandler2.class)
     static interface HelloWorld extends Bears {
         
         @Args( { "{message}" } )
-        @ErrorHandler(LocalErrorHandler.class)
         @ExecutionHandler(LocalExecutionHandler.class)
-        String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
+        abstract String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
     @Test
@@ -104,7 +102,6 @@ public class ApiProcessorTest {
         
         HelloWorld helloWorld = ApiProcessor.builder().scanClasspath().build().get(HelloWorld.class);
         Object returnValue = helloWorld.helloWorld("fish", 123, null);
-        Object returnValue1 = helloWorld.helloWorld("fish", 123, null);
 
         System.out.println("-----> ReturnValue=" + returnValue);
         System.out.println("----->Ending...");

@@ -33,6 +33,7 @@ import com.cdancy.api.processor.utils.ProcessorUtils;
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 
 import java.util.Set;
 import java.util.logging.Level;
@@ -62,6 +63,7 @@ public class ApiProcessor {
     
         private final Logger logger = Logger.getLogger(ApiProcessor.class.getName());
         private final Set<Class> apis = Sets.newHashSet();
+        private final Set<Module> modules = Sets.newHashSet();
         private boolean scanClasspath = false;
         
         private Class<? extends AbstractExecutionHandler> executionHandler;
@@ -73,7 +75,19 @@ public class ApiProcessor {
             this.apis.add(clazz);
             return this;
         }
-                
+              
+        /**
+         * Add module to Guice injection.
+         * 
+         * @param module the module to add.
+         * @return this Builder.
+         */
+        public Builder module(Module module) {
+            checkNotNull(module, "module cannot be null");
+            modules.add(module);
+            return this;
+        }
+        
         /**
          * Whether to scan classpath for Interfaces annotated with @Api. Defaults to false.
          * 
@@ -150,7 +164,8 @@ public class ApiProcessor {
             HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
             final Injector handlerInjector = Guice.createInjector(hrm);
             AbstractRuntimeInvocationHandler apiProcessorInvocationHandler = handlerInjector.getInstance(AbstractRuntimeInvocationHandler.class);
-            final Injector apiInjector = handlerInjector.createChildInjector(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler));
+            modules.add(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler));
+            final Injector apiInjector = handlerInjector.createChildInjector(modules);
             return new ApiProcessor(apiInjector);
         }
     }

@@ -27,9 +27,7 @@ import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.ProcessorHandles;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import java.lang.annotation.Annotation;
-import java.util.Map;
 
 /**
  *
@@ -39,7 +37,6 @@ public class ClassInstance implements ProcessorHandles {
     
     private final Class clazz;
     private final ImmutableMap<String, Annotation> annotations;
-    private final Map<String, MethodInstance> methodInstanceCache = Maps.newConcurrentMap();
 
     private final Class<? extends AbstractExecutionHandler> executionHandler;
     private final Class<? extends AbstractErrorHandler> errorHandler;

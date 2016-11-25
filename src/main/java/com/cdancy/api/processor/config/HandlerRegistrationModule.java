@@ -23,7 +23,7 @@ import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.DefaultExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
-import com.cdancy.api.processor.handlers.DefaultRuntimeInvocationHandler;
+import com.cdancy.api.processor.handlers.RuntimeInvocationHandler;
 import com.google.inject.AbstractModule;
 import javax.annotation.Nullable;
 
@@ -59,7 +59,7 @@ public class HandlerRegistrationModule extends AbstractModule {
     @Override 
     protected void configure() {
 
-        bind(AbstractRuntimeInvocationHandler.class).to(DefaultRuntimeInvocationHandler.class);
+        bind(AbstractRuntimeInvocationHandler.class).to(RuntimeInvocationHandler.class);
 
         Class defaultExecutionHandler = (executionHandler != null) 
                 ? executionHandler 

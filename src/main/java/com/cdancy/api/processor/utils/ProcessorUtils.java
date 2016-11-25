@@ -59,7 +59,7 @@ public class ProcessorUtils {
      */
     public static <T> T newTypeFrom(Class<T> proxyInterface, InvocationHandler invocationHandler) {
         checkNotNull(proxyInterface, "proxyInterface cannot be null");
-        checkArgument(proxyInterface.isInterface(), "class must be an interface");
+        checkArgument(proxyInterface.isInterface(), proxyInterface.getName() + " is not an interface");
         checkNotNull(invocationHandler, "invocationHandler cannot be null");
         return Reflection.newProxy(proxyInterface, invocationHandler);       
     }
