@@ -8,7 +8,7 @@ env:
    - secure: "Jh1MQKIRYi93UCGI8To-4g"
 
 
-script: ./gradlew -s -Dorg.gradle.daemon=false build
+script: ./gradlew -s -Dorg.gradle.daemon=false clean build publishToMavenLocal
 
 before_install:
       - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
