@@ -115,6 +115,11 @@ public class InvocationInstance {
         return returnType;
     }
     
+    @Override
+    public String toString() {
+        return this.clazz().getName() + "@" + this.method();
+    }
+    
     /**
      * Create new InvocationInstance from passed parameters.
      * 

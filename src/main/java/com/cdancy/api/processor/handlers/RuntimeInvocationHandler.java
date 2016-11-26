@@ -100,9 +100,10 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                     .withMaxRetries(Integer.valueOf(retryCount));
             
             Failsafe.with(retryPolicy)
-                    .onFailedAttempt(attempt -> logger.log(Level.INFO, "invocation attempt failed due to: {0}", attempt.getMessage()))
-                    .onFailure(failure -> logger.log(Level.INFO, "invocation failed due to: {0}", failure.getMessage()))
+                    .onFailedAttempt(attempt -> logger.log(Level.WARNING, "Invocation attempt failed due to: {0}", attempt.getMessage()))
+                    .onFailure(failure -> logger.log(Level.SEVERE, "Invocation failed due to: {0}", failure.getMessage()))
                     .run((ctx) -> { 
+                        logger.log(Level.INFO, "Invocation attempt {0} on " + invocationInstance, ctx.getExecutions() + 1);
                         Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
                         responseReference.set(responseObject); 
                     });
