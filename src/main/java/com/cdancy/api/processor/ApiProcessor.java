@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.cdancy.api.processor.annotations.Api;
-import com.cdancy.api.processor.cache.ProcessorCache;
+import com.cdancy.api.processor.cache.ApiProcessorCache;
 import com.cdancy.api.processor.config.ApiRegistrationModule;
 import com.cdancy.api.processor.config.HandlerRegistrationModule;
 import com.cdancy.api.processor.config.StandAloneModules;
@@ -30,12 +30,13 @@ import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
-import com.cdancy.api.processor.utils.ProcessorUtils;
+import com.cdancy.api.processor.utils.ApiProcessorUtils;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import java.util.Properties;
 
 import java.util.Set;
 import java.util.logging.Level;
@@ -67,6 +68,7 @@ public class ApiProcessor {
         private final Set<Class> apis = Sets.newHashSet();
         private final Set<Module> modules = Sets.newHashSet();
         private boolean scanClasspath = false;
+        private Properties properties = new Properties();
         
         private Class<? extends AbstractExecutionHandler> executionHandler;
         private Class<? extends AbstractErrorHandler> errorHandler;
@@ -97,6 +99,31 @@ public class ApiProcessor {
          */
         public Builder scanClasspath() {
             this.scanClasspath = true;
+            return this;
+        }
+        
+        /**
+         * Add properties to be used within various contexts within ApiProcessor.
+         * 
+         * @param properties the properties to add.
+         * @return this Builder.
+         */
+        public Builder properties(Properties properties) {
+            this.properties.putAll(checkNotNull(properties, "properties cannot be null"));
+            return this;
+        }
+        
+        /**
+         * Add a single property to be used within various contexts within ApiProcessor.
+         * 
+         * @param key the key of property
+         * @param value the value of property
+         * @return this Builder.
+         */
+        public Builder properties(String key, String value) {
+            checkNotNull(key, "key cannot be null");
+            checkNotNull(value, "value cannot be null");
+            this.properties.put(key, value);
             return this;
         }
         
@@ -151,29 +178,29 @@ public class ApiProcessor {
          */
         public ApiProcessor build() {
             
-            final ProcessorCache processorCache = new ProcessorCache();
-            final ProcessorUtils processorUtils = new ProcessorUtils();
-            
-            // 1.) Gather all Api's passed in and on classpath.
+            // 1.) Create parent injector from stand alone modules.
+            StandAloneModules sam = new StandAloneModules(properties);
+            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
+            Injector parentInjector = Guice.createInjector(sam, hrm);
+
+            // 2.) Gather all Api's passed in and on classpath.
             Set<Class> builtApis = Sets.newHashSet(apis);
             if (this.scanClasspath) {
+                ApiProcessorUtils processorUtils = parentInjector.getInstance(ApiProcessorUtils.class);
                 builtApis.addAll(processorUtils.findClassesAnnotatedWith(Api.class));
             }
-            
+                        
             checkArgument(builtApis.size() > 0, "must have at least 1 api to initialize processor");
             builtApis.stream().forEach(entry -> {
                 logger.log(Level.INFO, "Found Api @ {0}", entry.getName());
             });
             
-            // 2.) Create injector from modules and build ApiProcessor.
-            StandAloneModules sam = new StandAloneModules(processorCache, processorUtils);
-            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
-            
-            final Injector handlerInjector = Guice.createInjector(sam, hrm);
-            AbstractRuntimeInvocationHandler apiProcessorInvocationHandler = handlerInjector.getInstance(AbstractRuntimeInvocationHandler.class);
-            modules.add(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler, processorCache));
-            final Injector apiInjector = handlerInjector.createChildInjector(modules);
-            return new ApiProcessor(apiInjector);
+            // 3.) Create child injector and build ApiProcessor.
+            AbstractRuntimeInvocationHandler apiProcessorInvocationHandler = parentInjector.getInstance(AbstractRuntimeInvocationHandler.class);
+            ApiProcessorCache apiProcessorCache = parentInjector.getInstance(ApiProcessorCache.class);
+            modules.add(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler, apiProcessorCache));
+            Injector childInjector = parentInjector.createChildInjector(modules);
+            return new ApiProcessor(childInjector);
         }
     }
 }

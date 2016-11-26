@@ -96,11 +96,6 @@ public class ClassInstance implements ProcessorHandles {
     public ImmutableMap<String, Annotation> annotations() {
         return annotations;
     }
-    
-    public <T> T getAnnotation(Class<T> clazz) {
-        Annotation anno = annotations.get(clazz.getName());
-        return (anno != null) ? clazz.cast(anno) : null;
-    }
 
     @Override
     public Class<? extends AbstractExecutionHandler> executionHandler() {

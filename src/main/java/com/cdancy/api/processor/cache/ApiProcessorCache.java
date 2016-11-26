@@ -20,6 +20,9 @@ package com.cdancy.api.processor.cache;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.cdancy.api.processor.ApiProcessorConstants;
+import com.cdancy.api.processor.ApiProcessorProperties;
+
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
 import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
@@ -48,23 +51,28 @@ import sun.reflect.ReflectionFactory;
  * @author cdancy.
  */
 @Singleton
-public class ProcessorCache {
+public class ApiProcessorCache {
     
-    private static final Logger logger = Logger.getLogger(ProcessorCache.class.getName());
+    private static final Logger logger = Logger.getLogger(ApiProcessorCache.class.getName());
 
     private final Cache<String, Object> cache;
     
-    private final String CLASS_INSTANCE_PREFIX = "ClassInstance@";
-    private final String INVOKABLE_PREFIX = "Invokable@";
-    private final String METHOD_INSTANCE_PREFIX = "MethodInstance@";
-    private final String PROXY_PREFIX = "Proxy@";
-    private final String TYPE_PREFIX = "Type@";
-    
-    public ProcessorCache() {
+    private static final String CLASS_INSTANCE_PREFIX = "ClassInstance@";
+    private static final String INVOKABLE_PREFIX = "Invokable@";
+    private static final String METHOD_INSTANCE_PREFIX = "MethodInstance@";
+    private static final String PROXY_PREFIX = "Proxy@";
+    private static final String TYPE_PREFIX = "Type@";
+        
+    /**
+     * Create cache from passed properties.
+     * 
+     * @param properties the default properties to query for ApiProcessor constants
+     */
+    public ApiProcessorCache(ApiProcessorProperties properties) {        
+        String expireAfterAccess = properties.get(ApiProcessorConstants.CACHE_EXPIRE, "360000");
         cache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
             .recordStats()
-            .expireAfterAccess(360000, TimeUnit.MILLISECONDS)
+            .expireAfterAccess(Long.valueOf(expireAfterAccess), TimeUnit.MILLISECONDS)
             .build();
     }
             
@@ -147,7 +155,7 @@ public class ProcessorCache {
      * @param method method definition.
      * @return newly created MethodInstance.
      */
-    public MethodInstance methodInstanceFrom(Method method) {
+    private MethodInstance methodInstanceFrom(Method method) {
         String key = METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName(); 
         try {
             return (MethodInstance) cache.get(key, () -> {
@@ -208,7 +216,7 @@ public class ProcessorCache {
         AbstractFallbackHandler fallbackHandler = fallbackHandlerClass != null ? typeFrom(fallbackHandlerClass) : null;
         AbstractResponseHandler responseHandler = responseHandlerClass != null ? typeFrom(responseHandlerClass) : null;
                         
-        return InvocationInstance.newInstanceFrom(classInstance, 
+        return InvocationInstance.newInstance(classInstance, 
                 methodInstance, 
                 args,
                 executionHandler,

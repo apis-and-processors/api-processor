@@ -30,7 +30,7 @@ import java.util.Set;
  * @author cdancy.
  */
 @Singleton
-public class ProcessorUtils {
+public class ApiProcessorUtils {
 
     /**
      * Find all classes on the path annotated with given annotation.

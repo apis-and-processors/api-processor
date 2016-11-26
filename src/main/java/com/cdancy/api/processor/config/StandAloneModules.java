@@ -17,9 +17,11 @@
 
 package com.cdancy.api.processor.config;
 
-import com.cdancy.api.processor.cache.ProcessorCache;
-import com.cdancy.api.processor.utils.ProcessorUtils;
+import com.cdancy.api.processor.ApiProcessorProperties;
+import com.cdancy.api.processor.cache.ApiProcessorCache;
+import com.cdancy.api.processor.utils.ApiProcessorUtils;
 import com.google.inject.AbstractModule;
+import java.util.Properties;
 
 /**
  *
@@ -27,17 +29,20 @@ import com.google.inject.AbstractModule;
  */
 public class StandAloneModules extends AbstractModule {
             
-    private final ProcessorCache processorCache;
-    private final ProcessorUtils processorUtils;
+    private final Properties properties;
 
-    public StandAloneModules(ProcessorCache processorCache, ProcessorUtils processorUtils) {
-        this.processorCache = processorCache;
-        this.processorUtils = processorUtils;
+    public StandAloneModules(Properties properties) {
+        this.properties = properties;
     }
         
     @Override 
     protected void configure() {
-        bind(ProcessorCache.class).toInstance(processorCache);
-        bind(ProcessorUtils.class).toInstance(processorUtils);
+        ApiProcessorProperties apiProcessorProperties = new ApiProcessorProperties(properties);
+        ApiProcessorCache apiProcessorCache = new ApiProcessorCache(apiProcessorProperties);
+        ApiProcessorUtils apiProcessorUtils = new ApiProcessorUtils();
+        
+        bind(ApiProcessorProperties.class).toInstance(apiProcessorProperties);
+        bind(ApiProcessorCache.class).toInstance(apiProcessorCache);
+        bind(ApiProcessorUtils.class).toInstance(apiProcessorUtils);
     }
 }

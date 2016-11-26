@@ -21,6 +21,7 @@ import com.cdancy.api.processor.annotations.Api;
 import com.cdancy.api.processor.annotations.Args;
 import com.cdancy.api.processor.annotations.ArgsValue;
 import com.cdancy.api.processor.annotations.ExecutionHandler;
+import com.cdancy.api.processor.annotations.FallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
 import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
@@ -63,7 +64,8 @@ public class ApiProcessorTest {
     class LocalFallbackHandler extends AbstractFallbackHandler {
         @Override
         public Object apply(FallbackWrapper object) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            System.out.println("Falling back to null");
+            return null;
         }
     }
             
@@ -91,6 +93,7 @@ public class ApiProcessorTest {
         
         @Args( { "{message}" } )
         @ExecutionHandler(LocalExecutionHandler.class)
+        @FallbackHandler(LocalFallbackHandler.class)
         abstract String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
@@ -99,7 +102,10 @@ public class ApiProcessorTest {
         
         System.out.println("----->Starting...");
         
-        HelloWorld helloWorld = ApiProcessor.builder().scanClasspath().build().get(HelloWorld.class);
+        HelloWorld helloWorld = ApiProcessor.builder()
+                .scanClasspath()
+                .properties(ApiProcessorConstants.CACHE_EXPIRE, "10000").build()
+                .get(HelloWorld.class);
         Object returnValue = helloWorld.helloWorld("fish", 123, null);
 
         System.out.println("-----> ReturnValue=" + returnValue);

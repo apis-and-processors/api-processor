@@ -20,32 +20,38 @@ package com.cdancy.api.processor;
 /**
  * Constants used in api-processor services.
  */
-public final class Constants {
+public final class ApiProcessorConstants {
 
+    /**
+     * Long property.
+     * 
+     * <p>Expire entries in cache after the specified time (in milliseconds) passed since last access. Default is 360000.
+     */
+    public static final String CACHE_EXPIRE = "api-processor.cache-expire";
+    
     /**
      * Integer property.
      * 
-     * <p>Commands are retried, if the problem on the server side was a resolvable conflict. However,
-     * the maximum tries of a single command is bounded.
+     * <p>Number of retries an ExecutionHandler will be re-run upon failure. Default is 0.
      */
     public static final String RETRY_COUNT = "api-processor.retry-count";
 
     /**
      * Long property.
      * 
-     * <p>Commands are retried, if the problem on the server side was a resolvable conflict. However,
-     * the maximum tries of a single command is bounded. If {@link #RETRY_COUNT} is greater
-     * than zero, this property is used to determine the start delay. The delay is based on exponential
-     * backoff algorithm. Default value for this property is 50 milliseconds.
+     * <p>Time (in milliseconds) between ExecutionHandler retries if {@link #RETRY_COUNT} is greater
+     * than zero.
      */
     public static final String RETRY_DELAY_START = "api-processor.retry-delay-start";
 
 
-    /** Comma-separated list of methods considered idempotent for purposes of retries.  */
-    public static final String PROPERTY_IDEMPOTENT_METHODS = "api-processor.idempotent-methods";
+    /** 
+     * Comma-separated list of methods considered idempotent for purposes of retries.  
+     */
+    public static final String IDEMPOTENT_METHODS = "api-processor.idempotent-methods";
    
 
-    private Constants() {
+    private ApiProcessorConstants() {
         throw new AssertionError("intentionally unimplemented");
     }
 }

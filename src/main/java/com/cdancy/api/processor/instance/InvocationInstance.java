@@ -116,18 +116,18 @@ public class InvocationInstance {
     }
     
     /**
+     * Create new InvocationInstance from passed parameters.
      * 
-     * 
-     * @param classInstance
-     * @param methodInstance
-     * @param args
-     * @param executionHandler
-     * @param errorHandler
-     * @param fallbackHandler
-     * @param responseHandler
-     * @return 
+     * @param classInstance the classInstance used to query for annotations.
+     * @param methodInstance the methodInstance used to query for annotations.
+     * @param args the parameter arguments for this invocation.
+     * @param executionHandler the executionHandler used for this invocation.
+     * @param errorHandler the errorHandler used for this invocation.
+     * @param fallbackHandler the fallbackHandler used for this invocation.
+     * @param responseHandler the responseHandler used for this invocation.
+     * @return newly created InvocationInstance.
      */
-    public static InvocationInstance newInstanceFrom(ClassInstance classInstance, 
+    public static InvocationInstance newInstance(ClassInstance classInstance, 
             MethodInstance methodInstance, 
             Object [] args,
             AbstractExecutionHandler executionHandler,

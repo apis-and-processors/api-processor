@@ -17,9 +17,11 @@
 
 package com.cdancy.api.processor.handlers;
 
+import com.cdancy.api.processor.ApiProcessorConstants;
+import com.cdancy.api.processor.ApiProcessorProperties;
 import com.cdancy.api.processor.wrappers.ResponseWrapper;
 import com.cdancy.api.processor.instance.InvocationInstance;
-import com.cdancy.api.processor.cache.ProcessorCache;
+import com.cdancy.api.processor.cache.ApiProcessorCache;
 import com.cdancy.api.processor.wrappers.ErrorWrapper;
 import com.cdancy.api.processor.wrappers.FallbackWrapper;
 import com.google.common.base.Throwables;
@@ -44,7 +46,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private static final Logger logger = Logger.getLogger(RuntimeInvocationHandler.class.getName());
 
     @Inject
-    ProcessorCache processorCache;
+    ApiProcessorCache processorCache;
         
     @Inject
     AbstractExecutionHandler abstractExecutionHandler;
@@ -61,9 +63,12 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     @Nullable
     AbstractResponseHandler abstractResponseHandler;
         
+    @Inject
+    private ApiProcessorProperties properties;
+        
     @Override
     protected Object handleInvocation(Object source, Method method, Object[] args) {
-        
+                        
         // 1.) Get/Build InvocationInstance from cache.
         final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args);
         
@@ -87,17 +92,20 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         Throwable invocationException = null;
         try {
             
+            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, "0");
+            String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, "5000");
+
             RetryPolicy retryPolicy = new RetryPolicy()
-                .withDelay(5, TimeUnit.SECONDS)
-                .withMaxRetries(4);
+                    .withDelay(Long.valueOf(retryDelayStart), TimeUnit.MILLISECONDS)
+                    .withMaxRetries(Integer.valueOf(retryCount));
             
             Failsafe.with(retryPolicy)
-                .onFailedAttempt(attempt -> logger.log(Level.INFO, "invocation attempt failed due to: {0}", attempt.getMessage()))
-                .onFailure(failure -> logger.log(Level.INFO, "invocation failed due to: {0}", failure.getMessage()))
-                .run((ctx) -> { 
-                    Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
-                    responseReference.set(responseObject); 
-                });
+                    .onFailedAttempt(attempt -> logger.log(Level.INFO, "invocation attempt failed due to: {0}", attempt.getMessage()))
+                    .onFailure(failure -> logger.log(Level.INFO, "invocation failed due to: {0}", failure.getMessage()))
+                    .run((ctx) -> { 
+                        Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
+                        responseReference.set(responseObject); 
+                    });
                         
         } catch (Exception e) {
             invocationException = e;

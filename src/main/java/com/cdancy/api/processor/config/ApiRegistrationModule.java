@@ -17,9 +17,8 @@
 
 package com.cdancy.api.processor.config;
 
-import com.cdancy.api.processor.cache.ProcessorCache;
+import com.cdancy.api.processor.cache.ApiProcessorCache;
 import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
-import com.cdancy.api.processor.utils.ProcessorUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import java.util.Set;
@@ -32,12 +31,18 @@ public class ApiRegistrationModule extends AbstractModule {
 
     private final Set<Class> apis;
     private final AbstractRuntimeInvocationHandler abstractRuntimeInvocationHandler;
-    private final ProcessorCache processorCache;
+    private final ApiProcessorCache processorCache;
 
-            
+    /**
+     * Create ApiRegistrationModule from passed parameters.
+     * 
+     * @param apis the Set of Classes to register as API's.
+     * @param abstractRuntimeInvocationHandler the default handler each API will invoke on method execution.
+     * @param processorCache cache to create new proxy instances from.
+     */
     public ApiRegistrationModule(Set<Class> apis, 
             AbstractRuntimeInvocationHandler abstractRuntimeInvocationHandler, 
-            ProcessorCache processorCache) {
+            ApiProcessorCache processorCache) {
         this.apis = ImmutableSet.copyOf(apis);
         this.abstractRuntimeInvocationHandler = abstractRuntimeInvocationHandler;
         this.processorCache = processorCache;
