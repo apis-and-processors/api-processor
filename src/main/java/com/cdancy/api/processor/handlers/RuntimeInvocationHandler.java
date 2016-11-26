@@ -44,6 +44,9 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private static final Logger logger = Logger.getLogger(RuntimeInvocationHandler.class.getName());
 
     @Inject
+    ProcessorCache processorCache;
+        
+    @Inject
     AbstractExecutionHandler abstractExecutionHandler;
     
     @Inject(optional = true)
@@ -62,7 +65,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     protected Object handleInvocation(Object source, Method method, Object[] args) {
         
         // 1.) Get/Build InvocationInstance from cache.
-        final InvocationInstance invocationInstance = ProcessorCache.invocationInstanceFrom(method, args);
+        final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args);
         
         // 2.) Initialize handlers, if present, for runtime execution
         final AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) 

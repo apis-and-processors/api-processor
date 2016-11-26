@@ -20,7 +20,6 @@ package com.cdancy.api.processor;
 import com.cdancy.api.processor.annotations.Api;
 import com.cdancy.api.processor.annotations.Args;
 import com.cdancy.api.processor.annotations.ArgsValue;
-import com.cdancy.api.processor.annotations.ErrorHandler;
 import com.cdancy.api.processor.annotations.ExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
 import com.cdancy.api.processor.handlers.AbstractExecutionHandler;

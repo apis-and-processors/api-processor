@@ -21,15 +21,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.Sets;
-import com.google.common.reflect.Reflection;
+import com.google.inject.Singleton;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import java.lang.reflect.InvocationHandler;
 import java.util.Set;
 
 /**
  *
  * @author cdancy.
  */
+@Singleton
 public class ProcessorUtils {
 
     /**
@@ -38,7 +38,7 @@ public class ProcessorUtils {
      * @param annotation the annotation to scan for.
      * @return set of annotated classes.
      */
-    public static Set<Class> findClassesAnnotatedWith(Class annotation) {
+    public Set<Class> findClassesAnnotatedWith(Class annotation) {
         checkNotNull(annotation, "class annotataion cannot be null");
         checkArgument(annotation.isAnnotation(), "class must be an annotation");
         Set<Class> builtApis = Sets.newHashSet();
@@ -47,20 +47,5 @@ public class ProcessorUtils {
                     builtApis.add(c);
                 }).scan();
         return builtApis;
-    }
-    
-    /**
-     * Create a new type from the passed class interface and invocation handler.
-     * 
-     * @param <T> the Type of this class/interface.
-     * @param proxyInterface class definition for new Type.
-     * @param invocationHandler the invocation handler to use for newly created Type.
-     * @return newly created Type.
-     */
-    public static <T> T newTypeFrom(Class<T> proxyInterface, InvocationHandler invocationHandler) {
-        checkNotNull(proxyInterface, "proxyInterface cannot be null");
-        checkArgument(proxyInterface.isInterface(), proxyInterface.getName() + " is not an interface");
-        checkNotNull(invocationHandler, "invocationHandler cannot be null");
-        return Reflection.newProxy(proxyInterface, invocationHandler);       
     }
 }

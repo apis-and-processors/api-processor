@@ -18,35 +18,26 @@
 package com.cdancy.api.processor.config;
 
 import com.cdancy.api.processor.cache.ProcessorCache;
-import com.cdancy.api.processor.handlers.AbstractRuntimeInvocationHandler;
 import com.cdancy.api.processor.utils.ProcessorUtils;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
-import java.util.Set;
 
 /**
  *
  * @author cdancy.
  */
-public class ApiRegistrationModule extends AbstractModule {
-
-    private final Set<Class> apis;
-    private final AbstractRuntimeInvocationHandler abstractRuntimeInvocationHandler;
-    private final ProcessorCache processorCache;
-
+public class StandAloneModules extends AbstractModule {
             
-    public ApiRegistrationModule(Set<Class> apis, 
-            AbstractRuntimeInvocationHandler abstractRuntimeInvocationHandler, 
-            ProcessorCache processorCache) {
-        this.apis = ImmutableSet.copyOf(apis);
-        this.abstractRuntimeInvocationHandler = abstractRuntimeInvocationHandler;
+    private final ProcessorCache processorCache;
+    private final ProcessorUtils processorUtils;
+
+    public StandAloneModules(ProcessorCache processorCache, ProcessorUtils processorUtils) {
         this.processorCache = processorCache;
+        this.processorUtils = processorUtils;
     }
         
     @Override 
     protected void configure() {
-        apis.stream().forEach(entry -> {
-            bind(entry).toInstance(processorCache.proxyFrom(entry, abstractRuntimeInvocationHandler));
-        });
+        bind(ProcessorCache.class).toInstance(processorCache);
+        bind(ProcessorUtils.class).toInstance(processorUtils);
     }
 }

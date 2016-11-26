@@ -21,7 +21,6 @@ import com.cdancy.api.processor.handlers.AbstractErrorHandler;
 import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
-import com.cdancy.api.processor.cache.ProcessorCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
@@ -117,27 +116,24 @@ public class InvocationInstance {
     }
     
     /**
-     * Create InvocationInstance from passed args.
      * 
-     * @param classInstance the ClassInstance used for class annotations.
-     * @param methodInstance the MethodInstance used for method annotations.
-     * @param args runtime arguments passed to method.
-     * @return newly created InvocationInstance.
+     * 
+     * @param classInstance
+     * @param methodInstance
+     * @param args
+     * @param executionHandler
+     * @param errorHandler
+     * @param fallbackHandler
+     * @param responseHandler
+     * @return 
      */
-    public static InvocationInstance newInstanceFrom(ClassInstance classInstance, MethodInstance methodInstance, Object [] args) {
-        
-        Class<? extends AbstractExecutionHandler> executionHandler = (methodInstance.executionHandler() != null) 
-                ? methodInstance.executionHandler() 
-                : classInstance.executionHandler();
-        Class<? extends AbstractErrorHandler> errorHandler = (methodInstance.errorHandler() != null) 
-                ? methodInstance.errorHandler() 
-                : classInstance.errorHandler();
-        Class<? extends AbstractFallbackHandler> fallbackHandler = (methodInstance.fallbackHandler() != null) 
-                ? methodInstance.fallbackHandler() 
-                : classInstance.fallbackHandler();
-        Class<? extends AbstractResponseHandler> responseHandler = (methodInstance.responseHandler() != null) 
-                ? methodInstance.responseHandler() 
-                : classInstance.responseHandler();
+    public static InvocationInstance newInstanceFrom(ClassInstance classInstance, 
+            MethodInstance methodInstance, 
+            Object [] args,
+            AbstractExecutionHandler executionHandler,
+            AbstractErrorHandler errorHandler,
+            AbstractFallbackHandler fallbackHandler,
+            AbstractResponseHandler responseHandler) {
         
         return new InvocationInstance(classInstance.clazz(), 
                 classInstance.annotations(), 
@@ -146,10 +142,10 @@ public class InvocationInstance {
                 methodInstance.parameterInstanceCache(),
                 args,
                 methodInstance.returnType(), 
-                executionHandler != null ? ProcessorCache.typeFrom(executionHandler) : null, 
-                errorHandler != null ? ProcessorCache.typeFrom(errorHandler) : null, 
-                fallbackHandler != null ? ProcessorCache.typeFrom(fallbackHandler) : null, 
-                responseHandler != null ? ProcessorCache.typeFrom(responseHandler) : null);
+                executionHandler, 
+                errorHandler, 
+                fallbackHandler, 
+                responseHandler);
     }
 
     public AbstractExecutionHandler executionHandler() {

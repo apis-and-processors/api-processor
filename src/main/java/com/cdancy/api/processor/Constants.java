@@ -17,7 +17,6 @@
 
 package com.cdancy.api.processor;
 
-
 /**
  * Constants used in api-processor services.
  */

@@ -21,8 +21,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.cdancy.api.processor.annotations.Api;
+import com.cdancy.api.processor.cache.ProcessorCache;
 import com.cdancy.api.processor.config.ApiRegistrationModule;
 import com.cdancy.api.processor.config.HandlerRegistrationModule;
+import com.cdancy.api.processor.config.StandAloneModules;
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
 import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
@@ -149,22 +151,27 @@ public class ApiProcessor {
          */
         public ApiProcessor build() {
             
+            final ProcessorCache processorCache = new ProcessorCache();
+            final ProcessorUtils processorUtils = new ProcessorUtils();
+            
             // 1.) Gather all Api's passed in and on classpath.
             Set<Class> builtApis = Sets.newHashSet(apis);
             if (this.scanClasspath) {
-                builtApis.addAll(ProcessorUtils.findClassesAnnotatedWith(Api.class));
+                builtApis.addAll(processorUtils.findClassesAnnotatedWith(Api.class));
             }
             
             checkArgument(builtApis.size() > 0, "must have at least 1 api to initialize processor");
             builtApis.stream().forEach(entry -> {
                 logger.log(Level.INFO, "Found Api @ {0}", entry.getName());
             });
-
+            
             // 2.) Create injector from modules and build ApiProcessor.
+            StandAloneModules sam = new StandAloneModules(processorCache, processorUtils);
             HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
-            final Injector handlerInjector = Guice.createInjector(hrm);
+            
+            final Injector handlerInjector = Guice.createInjector(sam, hrm);
             AbstractRuntimeInvocationHandler apiProcessorInvocationHandler = handlerInjector.getInstance(AbstractRuntimeInvocationHandler.class);
-            modules.add(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler));
+            modules.add(new ApiRegistrationModule(builtApis, apiProcessorInvocationHandler, processorCache));
             final Injector apiInjector = handlerInjector.createChildInjector(modules);
             return new ApiProcessor(apiInjector);
         }
