@@ -30,7 +30,10 @@ import com.cdancy.api.processor.instance.InvocationInstance;
 import com.cdancy.api.processor.wrappers.ErrorWrapper;
 import com.cdancy.api.processor.wrappers.FallbackWrapper;
 import com.cdancy.api.processor.wrappers.ResponseWrapper;
+import com.google.common.collect.ImmutableSet;
+import java.lang.annotation.Annotation;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.testng.annotations.Test;
@@ -56,6 +59,9 @@ public class ApiProcessorTest {
     class LocalExecutionHandler extends AbstractExecutionHandler {
         @Override
         public Object apply(InvocationInstance object) {
+            
+            System.out.println("+++++++++++ FIRST ANNO: " + object.firstClassAnnotation(Args.class));
+            System.out.println("+++++++++++ LAST ANNO: " + object.lastClassAnnotation(Args.class));
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             throw new RuntimeException("fish!!!!");
         }
@@ -64,6 +70,9 @@ public class ApiProcessorTest {
     class LocalFallbackHandler extends AbstractFallbackHandler {
         @Override
         public Object apply(FallbackWrapper object) {
+            
+            System.out.println("Exepected return-type: " + object.returnType);
+            System.out.println("Thrown exception: " + object.thrownException.getClass());
             System.out.println("Falling back to null");
             return null;
         }
@@ -94,7 +103,7 @@ public class ApiProcessorTest {
         @Args( { "{message}" } )
         @ExecutionHandler(LocalExecutionHandler.class)
         @FallbackHandler(LocalFallbackHandler.class)
-        abstract String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
+        String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
     @Test

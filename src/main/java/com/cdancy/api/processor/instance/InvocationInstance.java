@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 public class InvocationInstance {
     
     private final Class clazz;
-    private final ImmutableMap<String, Annotation> classAnnotations;
+    private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
     private final ImmutableMap<String, Annotation> methodAnnotations;
     private final ImmutableList<ParameterInstance> parameterInstanceCache;
@@ -54,7 +54,7 @@ public class InvocationInstance {
     private final AbstractResponseHandler responseHandler;
         
     private InvocationInstance(Class clazz, 
-            ImmutableMap<String, Annotation> classAnnotations, 
+            ImmutableMap<String, ImmutableList<Annotation>> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
             ImmutableList<ParameterInstance> parameterInstanceCache,
@@ -81,13 +81,30 @@ public class InvocationInstance {
         return clazz;
     }
     
-    public ImmutableMap<String, Annotation> classAnnotations() {
+    public ImmutableMap<String, ImmutableList<Annotation>> classAnnotations() {
         return classAnnotations;
     } 
     
-    public <T> T getClassAnnotation(Class<T> clazz) {
-        Annotation anno = classAnnotations().get(clazz.getName());
-        return (anno != null) ? clazz.cast(anno) : null;
+    public <T> T firstClassAnnotation(Class<T> clazz) {
+        ImmutableList<Annotation> annos = classAnnotations().get(clazz.getName());
+        if (annos != null) {
+            return clazz.cast(annos.get(0));
+        } else {
+            return null;
+        }
+    }
+    
+    public <T> T lastClassAnnotation(Class<T> clazz) {
+        ImmutableList<Annotation> annos = classAnnotations().get(clazz.getName());
+        if (annos != null) {
+            return clazz.cast(annos.get(annos.size() - 1));
+        } else {
+            return null;
+        }
+    }
+    
+    public ImmutableList<Annotation> listClassAnnotations(Class clazz) {
+        return classAnnotations().get(clazz.getName());
     }
     
     public String method() {

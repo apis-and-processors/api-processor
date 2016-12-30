@@ -25,23 +25,23 @@ import com.google.common.reflect.TypeToken;
  */
 public class FallbackWrapper {
     
-    public final Throwable runtimeException;
-    public final TypeToken expectedReturnType;
+    public final TypeToken returnType;
+    public final Throwable thrownException;
     
-    public FallbackWrapper(Throwable runtimeException, TypeToken expectedReturnType) {
-        this.runtimeException = runtimeException;
-        this.expectedReturnType = expectedReturnType;
+    public FallbackWrapper(TypeToken returnType, Throwable thrownException) {
+        this.returnType = returnType;
+        this.thrownException = thrownException;
     }
     
-    public Throwable runtimeException() {
-        return runtimeException;
+    public Throwable thrownException() {
+        return thrownException;
     }
     
-    public TypeToken expectedReturnType() {
-        return expectedReturnType;
+    public TypeToken returnType() {
+        return returnType;
     }
     
-    public static FallbackWrapper newInstance(Throwable runtimeException, TypeToken expectedReturnType) {
-        return new FallbackWrapper(runtimeException, expectedReturnType);
+    public static FallbackWrapper newInstance(TypeToken returnType, Throwable thrownException) {
+        return new FallbackWrapper(returnType, thrownException);
     }
 }

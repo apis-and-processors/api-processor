@@ -23,17 +23,17 @@ import javax.annotation.Nullable;
  *
  * @author cdancy.
  */
-public class ErrorWrapper {
+public class ErrorWrapper<T> {
     
-    public final Object executionContext;
+    public final T executionContext;
     public final Throwable thrownException;
     
-    public ErrorWrapper(@Nullable Object executionContext, Throwable thrownException) {
+    public ErrorWrapper(@Nullable T executionContext, Throwable thrownException) {
         this.executionContext = executionContext;
         this.thrownException = thrownException;
     }
     
-    public Object executionContext() {
+    public T executionContext() {
         return executionContext;
     }
     
@@ -41,7 +41,7 @@ public class ErrorWrapper {
         return thrownException;
     }
     
-    public static ErrorWrapper newInstance(Object executionContext, Throwable thrownException) {
+    public static <T> ErrorWrapper<T> newInstance(T executionContext, Throwable thrownException) {
         return new ErrorWrapper(executionContext, thrownException);
     }
 }

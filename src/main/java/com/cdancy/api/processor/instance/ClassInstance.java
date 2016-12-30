@@ -26,8 +26,15 @@ import com.cdancy.api.processor.handlers.AbstractExecutionHandler;
 import com.cdancy.api.processor.handlers.AbstractFallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.ProcessorHandles;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -36,7 +43,7 @@ import java.lang.annotation.Annotation;
 public class ClassInstance implements ProcessorHandles {
     
     private final Class clazz;
-    private final ImmutableMap<String, Annotation> annotations;
+    private final ImmutableMap<String, ImmutableList<Annotation>> annotations;
 
     private final Class<? extends AbstractExecutionHandler> executionHandler;
     private final Class<? extends AbstractErrorHandler> errorHandler;
@@ -56,28 +63,35 @@ public class ClassInstance implements ProcessorHandles {
         Class localFallbackHandler = null;
         Class localResponseHandler = null;
         
-        ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
-        for (Annotation clazzAnnotation : clazz.getAnnotations()) {
-            mapBuilder.put(clazzAnnotation.annotationType().getName(), clazzAnnotation); 
-        }
-        this.annotations = mapBuilder.build();
+        this.annotations = buildClassAnnotationMap(clazz);
         
-        Annotation possibleAnnotation = this.annotations.get(ExecutionHandler.class.getName());
+        /**
+         * We always use the first annotation found below as that is the one closest 
+         * to the method definition.
+         */
+        ImmutableList<Annotation> possibleAnnotationList = this.annotations.get(ExecutionHandler.class.getName());
+        Annotation possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
         if (possibleAnnotation != null) {
             ExecutionHandler anno = (ExecutionHandler)possibleAnnotation;
             localExecutionHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(ErrorHandler.class.getName());
+        
+        possibleAnnotationList = this.annotations.get(ErrorHandler.class.getName());
+        possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
         if (possibleAnnotation != null) {
             ErrorHandler anno = (ErrorHandler)possibleAnnotation;
             localErrorHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(FallbackHandler.class.getName());
+        
+        possibleAnnotationList = this.annotations.get(FallbackHandler.class.getName());
+        possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
         if (possibleAnnotation != null) {
             FallbackHandler anno = (FallbackHandler)possibleAnnotation;
             localFallbackHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(ResponseHandler.class.getName());
+        
+        possibleAnnotationList = this.annotations.get(ResponseHandler.class.getName());
+        possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
         if (possibleAnnotation != null) {
             ResponseHandler anno = (ResponseHandler)possibleAnnotation;
             localResponseHandler = anno.value();
@@ -89,11 +103,36 @@ public class ClassInstance implements ProcessorHandles {
         this.responseHandler = localResponseHandler;
     }
     
+    private ImmutableMap<String, ImmutableList<Annotation>> buildClassAnnotationMap(Class clazz) {
+        
+        Map<String, ImmutableList.Builder<Annotation>> clazzAnnotationMap = Maps.newHashMap();
+        Class currentClass = clazz;
+        while (currentClass != null) {
+            for (Annotation clazzAnnotation : currentClass.getAnnotations()) {
+                String annoName = clazzAnnotation.annotationType().getName();
+                ImmutableList.Builder<Annotation> possibleList = clazzAnnotationMap.get(annoName);
+                if (possibleList == null) {
+                    possibleList = ImmutableList.builder();
+                    clazzAnnotationMap.put(annoName, possibleList);
+                }
+                possibleList.add(clazzAnnotation);
+            }
+            currentClass = (currentClass.getInterfaces().length > 0) ? currentClass.getInterfaces()[0] : null;
+        }
+        
+        ImmutableMap.Builder<String, ImmutableList<Annotation>> mapBuilder = ImmutableMap.builder();
+        clazzAnnotationMap.entrySet().forEach((entry) -> {
+            mapBuilder.put(entry.getKey(), entry.getValue().build());
+        });
+        
+        return mapBuilder.build();
+    }
+    
     public Class clazz() {
         return clazz;
     }
     
-    public ImmutableMap<String, Annotation> annotations() {
+    public ImmutableMap<String, ImmutableList<Annotation>> annotations() {
         return annotations;
     }
 

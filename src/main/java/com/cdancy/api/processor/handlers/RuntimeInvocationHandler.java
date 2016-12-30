@@ -130,7 +130,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         if (invocationException != null) {
             if (runtimeFallbackHandler != null) {
                 try {
-                    FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationException, invocationInstance.returnType());
+                    FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationInstance.returnType(), invocationException);
                     Object responseObject = runtimeFallbackHandler.apply(fallbackWrapper);
                     responseReference.set(responseObject);
                     fallbackInvoked = true;

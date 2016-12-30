@@ -24,25 +24,25 @@ import javax.annotation.Nullable;
  *
  * @author cdancy.
  */
-public class ResponseWrapper {
+public class ResponseWrapper<T> {
     
-    public final Object returnValue;
-    public final TypeToken expectedReturnType;
+    public final T returnValue;
+    public final TypeToken returnType;
     
-    public ResponseWrapper(@Nullable Object returnValue, TypeToken expectedReturnType) {
+    public ResponseWrapper(@Nullable T returnValue, TypeToken returnType) {
         this.returnValue = returnValue;
-        this.expectedReturnType = expectedReturnType;
+        this.returnType = returnType;
     }
     
     public Object returnValue() {
         return returnValue;
     }
     
-    public TypeToken expectedReturnType() {
-        return expectedReturnType;
+    public TypeToken returnType() {
+        return returnType;
     }
     
-    public static ResponseWrapper newInstance(Object returnValue, TypeToken expectedReturnType) {
-        return new ResponseWrapper(returnValue, expectedReturnType);
+    public static <T> ResponseWrapper<T> newInstance(T returnValue, TypeToken returnType) {
+        return new ResponseWrapper(returnValue, returnType);
     }
 }
