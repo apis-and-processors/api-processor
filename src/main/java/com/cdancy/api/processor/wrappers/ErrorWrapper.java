@@ -22,26 +22,27 @@ import javax.annotation.Nullable;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
 public class ErrorWrapper<T> {
     
-    public final T executionContext;
+    public final T context;
     public final Throwable thrownException;
     
-    public ErrorWrapper(@Nullable T executionContext, Throwable thrownException) {
-        this.executionContext = executionContext;
+    public ErrorWrapper(@Nullable T context, Throwable thrownException) {
+        this.context = context;
         this.thrownException = thrownException;
     }
     
-    public T executionContext() {
-        return executionContext;
+    public T context() {
+        return context;
     }
     
     public Throwable thrownException() {
         return thrownException;
     }
     
-    public static <T> ErrorWrapper<T> newInstance(T executionContext, Throwable thrownException) {
-        return new ErrorWrapper(executionContext, thrownException);
+    public static <T> ErrorWrapper<T> newInstance(T context, Throwable thrownException) {
+        return new ErrorWrapper(context, thrownException);
     }
 }

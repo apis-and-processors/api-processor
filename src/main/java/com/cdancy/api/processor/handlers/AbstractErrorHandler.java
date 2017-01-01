@@ -23,7 +23,8 @@ import java.util.function.Function;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
-public abstract class AbstractErrorHandler implements Function<ErrorWrapper, Throwable> {
+public abstract class AbstractErrorHandler<T> implements Function<ErrorWrapper<T>, Throwable> {
 
 }

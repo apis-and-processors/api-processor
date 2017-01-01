@@ -23,7 +23,8 @@ import java.util.function.Function;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
-public abstract class AbstractExecutionHandler implements Function<InvocationInstance, Object> {
+public abstract class AbstractExecutionHandler<T> implements Function<InvocationInstance, T> {
 
 }

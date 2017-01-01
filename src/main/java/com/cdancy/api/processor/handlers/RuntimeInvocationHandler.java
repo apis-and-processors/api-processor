@@ -43,7 +43,7 @@ import net.jodah.failsafe.RetryPolicy;
 @Singleton
 public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     
-    private static final Logger logger = Logger.getLogger(RuntimeInvocationHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(RuntimeInvocationHandler.class.getName());
 
     @Inject
     ApiProcessorCache processorCache;
@@ -70,7 +70,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     protected Object handleInvocation(Object source, Method method, Object[] args) {
                         
         // 1.) Get/Build InvocationInstance from cache.
-        final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args);
+        final InvocationInstance<?> invocationInstance = processorCache.invocationInstanceFrom(method, args);
         
         // 2.) Initialize handlers, if present, for runtime execution
         final AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) 
@@ -100,10 +100,10 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                     .withMaxRetries(Integer.valueOf(retryCount));
             
             Failsafe.with(retryPolicy)
-                    .onFailedAttempt(attempt -> logger.log(Level.WARNING, "Invocation attempt failed due to: {0}", attempt.getMessage()))
-                    .onFailure(failure -> logger.log(Level.SEVERE, "Invocation failed due to: {0}", failure.getMessage()))
+                    .onFailedAttempt(attempt -> LOGGER.log(Level.WARNING, "Invocation attempt failed due to: {0}", attempt.getMessage()))
+                    .onFailure(failure -> LOGGER.log(Level.SEVERE, "Invocation failed due to: {0}", failure.getMessage()))
                     .run((ctx) -> { 
-                        logger.log(Level.INFO, "Invocation attempt {0} on " + invocationInstance, ctx.getExecutions() + 1);
+                        LOGGER.log(Level.INFO, "Invocation attempt {0} on " + invocationInstance, ctx.getExecutions() + 1);
                         Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
                         responseReference.set(responseObject); 
                     });
@@ -116,7 +116,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         if (invocationException != null && runtimeErrorHandler != null) {
             try {
                 ErrorWrapper errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
-                Throwable possibleThrowable = runtimeErrorHandler.apply(errorWrapper);
+                Throwable possibleThrowable = (Throwable) runtimeErrorHandler.apply(errorWrapper);
                 if (possibleThrowable != null) {
                     invocationException = possibleThrowable;
                 }
@@ -144,7 +144,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
         // 6.) Optionally, we can marshall the response to some other object 
         if (!fallbackInvoked && runtimeResponseHandler != null) {
-            ResponseWrapper responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.returnType());
+            ResponseWrapper<?> responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.returnType());
             Object responseObject = runtimeResponseHandler.apply(responseWrapper);
             responseReference.set(responseObject);
         } 

@@ -40,7 +40,7 @@ public class MethodInstance implements ProcessorHandles {
     
     private final String method;
     private final ImmutableMap<String, Annotation> annotations;
-    private final ImmutableList<ParameterInstance> parameterInstanceCache;
+    private final ImmutableList<ParameterInstance<?>> parameterInstanceCache;
     private final TypeToken returnType;
     
     private final Class<? extends AbstractExecutionHandler> executionHandler;
@@ -96,7 +96,7 @@ public class MethodInstance implements ProcessorHandles {
         this.fallbackHandler = localFallbackHandler;
         this.responseHandler = localResponseHandler;
         
-        ImmutableList.Builder<ParameterInstance> listBuilder = ImmutableList.builder();
+        ImmutableList.Builder<ParameterInstance<?>> listBuilder = ImmutableList.builder();
         parameters.stream().forEach( entry -> {
             Class clazz = entry.getType().getRawType();
             Annotation [] parameterAnnotations = entry.getAnnotations();
@@ -116,7 +116,7 @@ public class MethodInstance implements ProcessorHandles {
         return annotations;
     }
     
-    public ImmutableList<ParameterInstance> parameterInstanceCache() {
+    public ImmutableList<ParameterInstance<?>> parameterInstanceCache() {
         return parameterInstanceCache;
     }
     

@@ -28,7 +28,7 @@ import java.lang.annotation.Annotation;
  */
 public class ParameterInstance<T> {
     
-    private final Class clazz;
+    private final Class<T> clazz;
     private final ImmutableMap<String, Annotation> annotations;
     
     // value is typically set AFTER object instantiation
@@ -40,7 +40,7 @@ public class ParameterInstance<T> {
      * @param clazz Class these parameters belong to.
      * @param annotations Annotations placed on each parameter.
      */
-    public ParameterInstance(Class clazz, Annotation[] annotations) {
+    public ParameterInstance(Class<T> clazz, Annotation[] annotations) {
         this.clazz = clazz;
         
         ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
@@ -51,7 +51,7 @@ public class ParameterInstance<T> {
         this.annotations = mapBuilder.build();        
     }
     
-    public Class clazz() {
+    public Class<T> clazz() {
         return clazz;    
     }
     

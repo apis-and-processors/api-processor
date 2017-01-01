@@ -34,7 +34,7 @@ public class ResponseWrapper<T> {
         this.returnType = returnType;
     }
     
-    public Object returnValue() {
+    public T returnValue() {
         return returnValue;
     }
     

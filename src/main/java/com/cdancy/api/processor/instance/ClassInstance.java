@@ -28,21 +28,18 @@ import com.cdancy.api.processor.handlers.AbstractResponseHandler;
 import com.cdancy.api.processor.handlers.ProcessorHandles;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
-public class ClassInstance implements ProcessorHandles {
+public class ClassInstance<T> implements ProcessorHandles {
     
-    private final Class clazz;
+    private final Class<T> clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> annotations;
 
     private final Class<? extends AbstractExecutionHandler> executionHandler;
@@ -55,7 +52,7 @@ public class ClassInstance implements ProcessorHandles {
      * 
      * @param clazz Class definition.
      */
-    public ClassInstance(Class clazz) {
+    public ClassInstance(Class<T> clazz) {
         this.clazz = clazz;
         
         Class localExecutionHandler = null;
@@ -131,7 +128,7 @@ public class ClassInstance implements ProcessorHandles {
         return mapBuilder.build();
     }
     
-    public Class clazz() {
+    public Class<T> clazz() {
         return clazz;
     }
     

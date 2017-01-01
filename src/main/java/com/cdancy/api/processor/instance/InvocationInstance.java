@@ -31,13 +31,13 @@ import javax.annotation.Nullable;
  *
  * @author cdancy.
  */
-public class InvocationInstance {
+public class InvocationInstance<T> {
     
-    private final Class clazz;
+    private final Class<T> clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
     private final ImmutableMap<String, Annotation> methodAnnotations;
-    private final ImmutableList<ParameterInstance> parameterInstanceCache;
+    private final ImmutableList<ParameterInstance<?>> parameterInstanceCache;
     private final Object [] arguments;
     private final TypeToken returnType;
     
@@ -53,11 +53,11 @@ public class InvocationInstance {
     @Nullable
     private final AbstractResponseHandler responseHandler;
         
-    private InvocationInstance(Class clazz, 
+    private InvocationInstance(Class<T> clazz, 
             ImmutableMap<String, ImmutableList<Annotation>> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
-            ImmutableList<ParameterInstance> parameterInstanceCache,
+            ImmutableList<ParameterInstance<?>> parameterInstanceCache,
             Object [] arguments,
             TypeToken returnType,
             AbstractExecutionHandler executionHandler,
@@ -77,7 +77,7 @@ public class InvocationInstance {
         this.responseHandler = responseHandler;
     }
     
-    public Class clazz() {
+    public Class<T> clazz() {
         return clazz;
     }
     

@@ -30,25 +30,23 @@ import com.cdancy.api.processor.instance.InvocationInstance;
 import com.cdancy.api.processor.wrappers.ErrorWrapper;
 import com.cdancy.api.processor.wrappers.FallbackWrapper;
 import com.cdancy.api.processor.wrappers.ResponseWrapper;
-import com.google.common.collect.ImmutableSet;
-import java.lang.annotation.Annotation;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.testng.annotations.Test;
 
 public class ApiProcessorTest {
     
-    class LocalErrorHandler extends AbstractErrorHandler {
+    class LocalErrorHandler extends AbstractErrorHandler<String> {
         @Override
-        public Throwable apply(ErrorWrapper object) {
+        public Throwable apply(ErrorWrapper<String> object) {
+            
             System.out.println("Hello local error");
             return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
    
-    class LocalExecutionHandler2 extends AbstractExecutionHandler {
+    class LocalExecutionHandler2 extends AbstractExecutionHandler<Object> {
         @Override
         public Object apply(InvocationInstance object) {
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -56,20 +54,23 @@ public class ApiProcessorTest {
         }
     }
         
-    class LocalExecutionHandler extends AbstractExecutionHandler {
+    class LocalExecutionHandler extends AbstractExecutionHandler<Object> {
         @Override
         public Object apply(InvocationInstance object) {
             
             System.out.println("+++++++++++ FIRST ANNO: " + object.firstClassAnnotation(Args.class));
             System.out.println("+++++++++++ LAST ANNO: " + object.lastClassAnnotation(Args.class));
+            
+            System.out.println("++++++++++param count: " + object.parameterCount());
+            
             //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
             throw new RuntimeException("fish!!!!");
         }
     }
         
-    class LocalFallbackHandler extends AbstractFallbackHandler {
+    class LocalFallbackHandler extends AbstractFallbackHandler<String> {
         @Override
-        public Object apply(FallbackWrapper object) {
+        public String apply(FallbackWrapper object) {
             
             System.out.println("Exepected return-type: " + object.returnType);
             System.out.println("Thrown exception: " + object.thrownException.getClass());
@@ -78,7 +79,7 @@ public class ApiProcessorTest {
         }
     }
             
-    class LocalResponseHandler extends AbstractResponseHandler {
+    class LocalResponseHandler extends AbstractResponseHandler<Object> {
         @Override
         public Object apply(ResponseWrapper object) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

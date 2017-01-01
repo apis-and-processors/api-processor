@@ -23,7 +23,8 @@ import java.util.function.Function;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
-public abstract class AbstractFallbackHandler implements Function<FallbackWrapper, Object> {
+public abstract class AbstractFallbackHandler<T> implements Function<FallbackWrapper, T> {
 
 }

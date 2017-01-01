@@ -25,7 +25,7 @@ import com.google.inject.Singleton;
  * @author cdancy.
  */
 @Singleton
-public class DefaultExecutionHandler extends AbstractExecutionHandler {
+public class DefaultExecutionHandler extends AbstractExecutionHandler<Object> {
 
     @Override
     public Object apply(InvocationInstance invocationInstance) {
