@@ -24,11 +24,15 @@ import java.lang.annotation.Annotation;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
-public class ParameterInstance {
+public class ParameterInstance<T> {
     
     private final Class clazz;
     private final ImmutableMap<String, Annotation> annotations;
+    
+    // value is typically set AFTER object instantiation
+    private T value = null;
     
     /**
      * Create ParameterInstance from passed args.
@@ -58,5 +62,13 @@ public class ParameterInstance {
     public <T> T getParameterAnnotation(Class<T> clazz) {
         Annotation anno = annotations().get(clazz.getName());
         return (anno != null) ? clazz.cast(anno) : null;
+    }
+    
+    public void setValue(T value) {
+        this.value = value;
+    }
+        
+    public T getValue() {
+        return value;
     }
 }

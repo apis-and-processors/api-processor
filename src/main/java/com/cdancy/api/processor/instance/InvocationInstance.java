@@ -103,7 +103,7 @@ public class InvocationInstance {
         }
     }
     
-    public ImmutableList<Annotation> listClassAnnotations(Class clazz) {
+    public ImmutableList<Annotation> classAnnotations(Class clazz) {
         return classAnnotations().get(clazz.getName());
     }
     
@@ -115,17 +115,19 @@ public class InvocationInstance {
         return methodAnnotations;
     } 
     
-    public <T> T getMethodAnnotation(Class<T> clazz) {
+    public <T> T methodAnnotation(Class<T> clazz) {
         Annotation anno = methodAnnotations().get(clazz.getName());
         return (anno != null) ? clazz.cast(anno) : null;
     }
     
     public ParameterInstance parameterInstance(int index) {
-        return parameterInstanceCache.get(index);
+        ParameterInstance parameterInstance = parameterInstanceCache.get(index);
+        parameterInstance.setValue(arguments[index]);
+        return parameterInstance;
     }
     
-    public Object arguments(int index) {
-        return arguments[index];
+    public int parameterCount() {
+        return arguments.length;
     }
     
     public TypeToken returnType() {

@@ -117,6 +117,9 @@ public class ClassInstance implements ProcessorHandles {
                 }
                 possibleList.add(clazzAnnotation);
             }
+            
+            // always, and really only, need to get the 0th element as we are only dealing with interfaces
+            // and the interfaces themselves can only extend a single class (which is the thing we are after).
             currentClass = (currentClass.getInterfaces().length > 0) ? currentClass.getInterfaces()[0] : null;
         }
         
