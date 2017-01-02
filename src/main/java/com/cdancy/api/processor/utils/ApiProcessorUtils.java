@@ -32,6 +32,9 @@ import java.util.Set;
 @Singleton
 public class ApiProcessorUtils {
 
+    private static final String CLASS_ANNO_NULL = "class annotataion cannot be null";
+    private static final String CLASS_ANNO_REQUIRED = "class must be an annotation";
+
     /**
      * Find all classes on the path annotated with given annotation.
      * 
@@ -39,8 +42,8 @@ public class ApiProcessorUtils {
      * @return set of annotated classes.
      */
     public Set<Class> findClassesAnnotatedWith(Class annotation) {
-        checkNotNull(annotation, "class annotataion cannot be null");
-        checkArgument(annotation.isAnnotation(), "class must be an annotation");
+        checkNotNull(annotation, CLASS_ANNO_NULL);
+        checkArgument(annotation.isAnnotation(), CLASS_ANNO_REQUIRED);
         Set<Class> builtApis = Sets.newHashSet();
         new FastClasspathScanner()
                 .matchClassesWithAnnotation(annotation, c -> {

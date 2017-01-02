@@ -106,7 +106,7 @@ public class ClassInstance<T> implements ProcessorHandles {
         Class currentClass = clazz;
         while (currentClass != null) {
             for (Annotation clazzAnnotation : currentClass.getAnnotations()) {
-                String annoName = clazzAnnotation.annotationType().getName();
+                String annoName = (clazzAnnotation.annotationType().getName()).intern();
                 ImmutableList.Builder<Annotation> possibleList = clazzAnnotationMap.get(annoName);
                 if (possibleList == null) {
                     possibleList = ImmutableList.builder();

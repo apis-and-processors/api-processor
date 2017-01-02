@@ -53,7 +53,7 @@ import sun.reflect.ReflectionFactory;
 @Singleton
 public class ApiProcessorCache {
     
-    private static final Logger logger = Logger.getLogger(ApiProcessorCache.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ApiProcessorCache.class.getName());
 
     private final Cache<String, Object> cache;
     
@@ -62,7 +62,20 @@ public class ApiProcessorCache {
     private static final String METHOD_INSTANCE_PREFIX = "MethodInstance@";
     private static final String PROXY_PREFIX = "Proxy@";
     private static final String TYPE_PREFIX = "Type@";
-        
+    
+    private static final String PROXY_IS_NULL = "proxyInterface cannot be null";
+    private static final String PROXY_NOT_INTERFACE = "proxyInterface is not an interface";
+    private static final String PROXY_INVOKE_HANDLER_IS_NULL = "invocationHandler cannot be null";
+    private static final String PROXY_CACHE_MESSAGE = "Caching new Proxy at: {0}";
+
+    private static final String TYPE_IS_NULL = "clazz cannot be null";
+    private static final String TYPE_CACHE_MESSAGE = "Caching new Type at: {0}";
+    
+    private static final String INVOKABLE_CACHE_MESSAGE = "Caching new Invokable at: {0}";
+    private static final String METHOD_INSTANCE_CACHE_MESSAGE = "Caching new MethodInstance at: {0}";
+    private static final String CLASS_INSTANCE_CACHE_MESSAGE = "Caching new ClassInstance at: {0}";
+
+
     /**
      * Create cache from passed properties.
      * 
@@ -85,14 +98,14 @@ public class ApiProcessorCache {
      * @return newly created Type.
      */
     public <T> T proxyFrom(Class<T> proxyInterface, InvocationHandler invocationHandler) {
-        checkNotNull(proxyInterface, "proxyInterface cannot be null");
-        checkArgument(proxyInterface.isInterface(), proxyInterface.getName() + " is not an interface");
-        checkNotNull(invocationHandler, "invocationHandler cannot be null");
+        checkNotNull(proxyInterface, PROXY_IS_NULL);
+        checkArgument(proxyInterface.isInterface(), PROXY_NOT_INTERFACE);
+        checkNotNull(invocationHandler, PROXY_INVOKE_HANDLER_IS_NULL);
         
-        String key = PROXY_PREFIX + proxyInterface.getName();
+        String key = (PROXY_PREFIX + proxyInterface.getName()).intern();
         try {
             return (T) cache.get(key, () -> {
-                logger.log(Level.INFO, "Caching new Proxy at: {0}", key);
+                LOGGER.log(Level.CONFIG, PROXY_CACHE_MESSAGE, key);
                 return Reflection.newProxy(proxyInterface, invocationHandler);
             });
         } catch (SecurityException | IllegalArgumentException | ExecutionException ex) {
@@ -108,12 +121,12 @@ public class ApiProcessorCache {
      * @return newly created Type.
      */
     public <T> T typeFrom(Class<T> beanClass) {
-        checkNotNull(beanClass, "clazz cannot be null");
+        checkNotNull(beanClass, TYPE_IS_NULL);
         
-        String key = TYPE_PREFIX + beanClass.getName();
+        String key = (TYPE_PREFIX + beanClass.getName()).intern();
         try {
             Object obj = cache.get(key, () -> {
-                logger.log(Level.INFO, "Caching new Type at: {0}", key);
+                LOGGER.log(Level.CONFIG, TYPE_CACHE_MESSAGE, key);
                 Constructor genericConstructor = ReflectionFactory
                         .getReflectionFactory()
                         .newConstructorForSerialization(beanClass, Object.class.getDeclaredConstructors()[0]);
@@ -138,10 +151,10 @@ public class ApiProcessorCache {
      * @return newly created Invokable.
      */
     private Invokable invokableFrom(Class clazz, Method method) {
-        String key = INVOKABLE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName();
+        String key = (INVOKABLE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName()).intern();
         try {
             return (Invokable) cache.get(key, () -> {
-                logger.log(Level.INFO, "Caching new Invokable at: {0}", key);
+                LOGGER.log(Level.CONFIG, INVOKABLE_CACHE_MESSAGE, key);
                 return TypeToken.of(clazz).method(method);
             });
         } catch (SecurityException | IllegalArgumentException | ExecutionException ex) {
@@ -156,10 +169,10 @@ public class ApiProcessorCache {
      * @return newly created MethodInstance.
      */
     private MethodInstance methodInstanceFrom(Method method) {
-        String key = METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName(); 
+        String key = (METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName()).intern(); 
         try {
             return (MethodInstance) cache.get(key, () -> {
-                logger.log(Level.INFO, "Caching new MethodInstance at: {0}", key);
+                LOGGER.log(Level.CONFIG, METHOD_INSTANCE_CACHE_MESSAGE, key);
                 Invokable inv = invokableFrom(method.getDeclaringClass(), method);
                 return new MethodInstance(inv.getName(), inv.getAnnotations(), inv.getParameters(), inv.getReturnType());
             });
@@ -175,11 +188,11 @@ public class ApiProcessorCache {
      * @return newly created ClassInstance.
      */
     public ClassInstance classInstanceFrom(Method method) {
-        String key = CLASS_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName(); 
+        String key = (CLASS_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName()).intern(); 
         try {
             Invokable inv = invokableFrom(method.getDeclaringClass(), method);
             return (ClassInstance) cache.get(key, () -> {
-                logger.log(Level.INFO, "Caching new ClassInstance at: {0}", key);
+                LOGGER.log(Level.CONFIG, CLASS_INSTANCE_CACHE_MESSAGE, key);
                 return new ClassInstance(inv.getDeclaringClass());
             });
         } catch (SecurityException | IllegalArgumentException | ExecutionException ex) {

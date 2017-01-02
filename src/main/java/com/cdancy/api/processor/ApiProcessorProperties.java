@@ -32,6 +32,9 @@ import java.util.Properties;
 @Singleton
 public class ApiProcessorProperties {
     
+    private static final String PROP_KEY_NULL = "property key cannot be null";
+    private static final String PROP_VALUE_NULL = "property value cannot be null";
+
     public final ImmutableMap<String, String> properties;
     
     /**
@@ -42,8 +45,8 @@ public class ApiProcessorProperties {
     public ApiProcessorProperties(Properties defaults) {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
         defaults.forEach((key, value) -> {
-            String possibleKey = "" + checkNotNull(key, "property key cannot be null");
-            String possibleValue = "" + checkNotNull(value, "property value cannot be null");
+            String possibleKey = "" + checkNotNull(key, PROP_KEY_NULL);
+            String possibleValue = "" + checkNotNull(value, PROP_VALUE_NULL);
             builder.put(possibleKey, possibleValue);
         });
         this.properties = builder.build();

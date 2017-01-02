@@ -61,7 +61,7 @@ public class MethodInstance implements ProcessorHandles {
         
         ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
         for (Annotation methodAnnotation : annotations) {
-            mapBuilder.put(methodAnnotation.annotationType().getName(), methodAnnotation);
+            mapBuilder.put((methodAnnotation.annotationType().getName()).intern(), methodAnnotation);
         }
         this.annotations = mapBuilder.build();
         
@@ -70,22 +70,22 @@ public class MethodInstance implements ProcessorHandles {
         Class localFallbackHandler = null;
         Class localResponseHandler = null;
         
-        Annotation possibleAnnotation = this.annotations.get(ExecutionHandler.class.getName());
+        Annotation possibleAnnotation = this.annotations.get((ExecutionHandler.class.getName()).intern());
         if (possibleAnnotation != null) {
             ExecutionHandler anno = (ExecutionHandler)possibleAnnotation;
             localExecutionHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(ErrorHandler.class.getName());
+        possibleAnnotation = this.annotations.get((ErrorHandler.class.getName()).intern());
         if (possibleAnnotation != null) {
             ErrorHandler anno = (ErrorHandler)possibleAnnotation;
             localErrorHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(FallbackHandler.class.getName());
+        possibleAnnotation = this.annotations.get((FallbackHandler.class.getName()).intern());
         if (possibleAnnotation != null) {
             FallbackHandler anno = (FallbackHandler)possibleAnnotation;
             localFallbackHandler = anno.value();
         }
-        possibleAnnotation = this.annotations.get(ResponseHandler.class.getName());
+        possibleAnnotation = this.annotations.get((ResponseHandler.class.getName()).intern());
         if (possibleAnnotation != null) {
             ResponseHandler anno = (ResponseHandler)possibleAnnotation;
             localResponseHandler = anno.value();

@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 /**
  *
  * @author cdancy.
+ * @param <T>
  */
 public class InvocationInstance<T> {
     
@@ -136,7 +137,7 @@ public class InvocationInstance<T> {
     
     @Override
     public String toString() {
-        return this.clazz().getName() + "@" + this.method();
+        return (this.clazz().getName() + "@" + this.method()).intern();
     }
     
     /**

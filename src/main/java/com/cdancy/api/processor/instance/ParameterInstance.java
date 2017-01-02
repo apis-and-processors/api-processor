@@ -45,7 +45,7 @@ public class ParameterInstance<T> {
         
         ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
         Lists.newArrayList(annotations).stream().forEach( entry -> {
-            mapBuilder.put(entry.annotationType().getName(), entry);
+            mapBuilder.put((entry.annotationType().getName()).intern(), entry);
 
         });
         this.annotations = mapBuilder.build();        
@@ -60,7 +60,7 @@ public class ParameterInstance<T> {
     }
     
     public <T> T getParameterAnnotation(Class<T> clazz) {
-        Annotation anno = annotations().get(clazz.getName());
+        Annotation anno = annotations().get((clazz.getName()).intern());
         return (anno != null) ? clazz.cast(anno) : null;
     }
     

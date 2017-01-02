@@ -67,8 +67,9 @@ public class ApiProcessor {
         private final Logger logger = Logger.getLogger(ApiProcessor.class.getName());
         private final Set<Class> apis = Sets.newHashSet();
         private final Set<Module> modules = Sets.newHashSet();
+        private final Properties properties = new Properties();
+        
         private boolean scanClasspath = false;
-        private Properties properties = new Properties();
         
         private Class<? extends AbstractExecutionHandler> executionHandler;
         private Class<? extends AbstractErrorHandler> errorHandler;
@@ -89,16 +90,6 @@ public class ApiProcessor {
         public Builder module(Module module) {
             checkNotNull(module, "module cannot be null");
             modules.add(module);
-            return this;
-        }
-        
-        /**
-         * Whether to scan classpath for Interfaces annotated with @Api. Defaults to false.
-         * 
-         * @return this Builder.
-         */
-        public Builder scanClasspath() {
-            this.scanClasspath = true;
             return this;
         }
         
@@ -124,6 +115,16 @@ public class ApiProcessor {
             checkNotNull(key, "key cannot be null");
             checkNotNull(value, "value cannot be null");
             this.properties.put(key, value);
+            return this;
+        }
+        
+        /**
+         * Whether to scan classpath for Interfaces annotated with @Api. Defaults to false.
+         * 
+         * @return this Builder.
+         */
+        public Builder scanClasspath() {
+            this.scanClasspath = true;
             return this;
         }
         

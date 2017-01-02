@@ -52,6 +52,6 @@ public final class ApiProcessorConstants {
    
 
     private ApiProcessorConstants() {
-        throw new AssertionError("intentionally unimplemented");
+        throw new UnsupportedOperationException("intentionally unimplemented");
     }
 }
