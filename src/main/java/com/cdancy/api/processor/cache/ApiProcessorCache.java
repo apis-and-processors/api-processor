@@ -66,11 +66,11 @@ public class ApiProcessorCache {
     private static final String PROXY_IS_NULL = "proxyInterface cannot be null";
     private static final String PROXY_NOT_INTERFACE = "proxyInterface is not an interface";
     private static final String PROXY_INVOKE_HANDLER_IS_NULL = "invocationHandler cannot be null";
-    private static final String PROXY_CACHE_MESSAGE = "Caching new Proxy at: {0}";
 
     private static final String TYPE_IS_NULL = "clazz cannot be null";
-    private static final String TYPE_CACHE_MESSAGE = "Caching new Type at: {0}";
     
+    private static final String PROXY_CACHE_MESSAGE = "Caching new Proxy at: {0}";
+    private static final String TYPE_CACHE_MESSAGE = "Caching new Type at: {0}";
     private static final String INVOKABLE_CACHE_MESSAGE = "Caching new Invokable at: {0}";
     private static final String METHOD_INSTANCE_CACHE_MESSAGE = "Caching new MethodInstance at: {0}";
     private static final String CLASS_INSTANCE_CACHE_MESSAGE = "Caching new ClassInstance at: {0}";

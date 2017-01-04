@@ -20,6 +20,7 @@ package com.cdancy.api.processor;
 import com.cdancy.api.processor.annotations.Api;
 import com.cdancy.api.processor.annotations.Args;
 import com.cdancy.api.processor.annotations.ArgsValue;
+import com.cdancy.api.processor.annotations.Delegate;
 import com.cdancy.api.processor.annotations.ExecutionHandler;
 import com.cdancy.api.processor.annotations.FallbackHandler;
 import com.cdancy.api.processor.handlers.AbstractErrorHandler;
@@ -107,15 +108,23 @@ public class ApiProcessorTest {
         String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
+    @Api
+    static interface HelloWorldApi {
+        
+        @Delegate
+        HelloWorld helloWorld();
+    }
+    
     @Test
     public void testSomeLibraryMethod() {
         
         System.out.println("----->Starting...");
         
-        HelloWorld helloWorld = ApiProcessor.builder()
+        HelloWorldApi helloWorldApi = ApiProcessor.builder()
                 .scanClasspath()
                 .properties(ApiProcessorConstants.CACHE_EXPIRE, "10000").build()
-                .get(HelloWorld.class);
+                .get(HelloWorldApi.class);
+        HelloWorld helloWorld = helloWorldApi.helloWorld();
         Object returnValue = helloWorld.helloWorld("fish", 123, null);
 
         System.out.println("-----> ReturnValue=" + returnValue);

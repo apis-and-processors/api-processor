@@ -35,6 +35,7 @@ public final class ApiProcessorConstants {
      * <p>Number of retries an ExecutionHandler will be re-run upon failure. Default is 0.
      */
     public static final String RETRY_COUNT = "api-processor.retry-count";
+    public static final String RETRY_COUNT_DEFAULT = "0";
 
     /**
      * Long property.
@@ -43,7 +44,7 @@ public final class ApiProcessorConstants {
      * than zero.
      */
     public static final String RETRY_DELAY_START = "api-processor.retry-delay-start";
-
+    public static final String RETRY_DELAY_START_DEFAULT = "5000";
 
     /** 
      * Comma-separated list of methods considered idempotent for purposes of retries.  

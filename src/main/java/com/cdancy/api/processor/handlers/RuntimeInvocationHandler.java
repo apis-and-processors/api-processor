@@ -19,6 +19,7 @@ package com.cdancy.api.processor.handlers;
 
 import com.cdancy.api.processor.ApiProcessorConstants;
 import com.cdancy.api.processor.ApiProcessorProperties;
+import com.cdancy.api.processor.annotations.Delegate;
 import com.cdancy.api.processor.wrappers.ResponseWrapper;
 import com.cdancy.api.processor.instance.InvocationInstance;
 import com.cdancy.api.processor.cache.ApiProcessorCache;
@@ -45,6 +46,11 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     
     private static final Logger LOGGER = Logger.getLogger(RuntimeInvocationHandler.class.getName());
 
+    private static final String DELEGATE_MESSAGE = "Delegate method returning instance of {0}";
+    private static final String RETRY_ATTEMPT_MESSAGE = "Invocation attempt failed due to: {0}";
+    private static final String RETRY_FAILED_MESSAGE = "Invocation failed due to: {0}";
+    private static final String RETRY_RUN_MESSAGE = "Invocation attempt {0} on {1}";
+    
     @Inject
     ApiProcessorCache processorCache;
         
@@ -65,6 +71,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
     @Inject
     private ApiProcessorProperties properties;
+    
         
     @Override
     protected Object handleInvocation(Object source, Method method, Object[] args) {
@@ -72,7 +79,14 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         // 1.) Get/Build InvocationInstance from cache.
         final InvocationInstance<?> invocationInstance = processorCache.invocationInstanceFrom(method, args);
         
-        // 2.) Initialize handlers, if present, for runtime execution
+        // 2.) If method is a Delegate then return an instance of its Api/Interface
+        if (invocationInstance.methodAnnotation(Delegate.class) != null) {
+            Class proxyType = invocationInstance.returnType().getRawType();
+            LOGGER.log(Level.INFO, DELEGATE_MESSAGE, proxyType);
+            return processorCache.proxyFrom(proxyType, this);
+        }
+        
+        // 3.) Initialize handlers, if present, for runtime execution
         final AbstractExecutionHandler runtimeExecutionHandler = (invocationInstance.executionHandler() != null) 
                 ? invocationInstance.executionHandler() 
                 : abstractExecutionHandler;
@@ -86,24 +100,24 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                 ? invocationInstance.responseHandler() 
                 : abstractResponseHandler;
         
-        
-        // 3.) Pass InvocationInstance to ExecutionHandler for runtime execution.
+        // 4.) Pass InvocationInstance to ExecutionHandler for runtime execution.
         final AtomicReference responseReference = new AtomicReference();
         Throwable invocationException = null;
         try {
             
-            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, "0");
-            String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, "5000");
+            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, ApiProcessorConstants.RETRY_COUNT);
+            String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, ApiProcessorConstants.RETRY_DELAY_START_DEFAULT);
 
             RetryPolicy retryPolicy = new RetryPolicy()
                     .withDelay(Long.valueOf(retryDelayStart), TimeUnit.MILLISECONDS)
                     .withMaxRetries(Integer.valueOf(retryCount));
             
             Failsafe.with(retryPolicy)
-                    .onFailedAttempt(attempt -> LOGGER.log(Level.WARNING, "Invocation attempt failed due to: {0}", attempt.getMessage()))
-                    .onFailure(failure -> LOGGER.log(Level.SEVERE, "Invocation failed due to: {0}", failure.getMessage()))
+                    .onFailedAttempt(attempt -> LOGGER.log(Level.WARNING, RETRY_ATTEMPT_MESSAGE, attempt.getMessage()))
+                    .onFailure(failure -> LOGGER.log(Level.SEVERE, RETRY_FAILED_MESSAGE, failure.getMessage()))
                     .run((ctx) -> { 
-                        LOGGER.log(Level.INFO, "Invocation attempt {0} on " + invocationInstance, ctx.getExecutions() + 1);
+                        Object [] loggerParams = {ctx.getExecutions() + 1, invocationInstance.toString()};
+                        LOGGER.log(Level.INFO, RETRY_RUN_MESSAGE, loggerParams);
                         Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
                         responseReference.set(responseObject); 
                     });
@@ -112,7 +126,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             invocationException = e;
         }
         
-        // 4.) Optionally, if exception was found during execution then pass to errorHandler for marshalling
+        // 5.) Optionally, if exception was found during execution then pass to errorHandler for marshalling
         if (invocationException != null && runtimeErrorHandler != null) {
             try {
                 ErrorWrapper errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
@@ -125,7 +139,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             }
         }
         
-        // 5.) Optionally, if exception was not previously handled (perhaps re-thrown as something else), then pass to fallbackHandler
+        // 6.) Optionally, if exception was not previously handled (perhaps re-thrown as something else), then pass to fallbackHandler
         boolean fallbackInvoked = false;
         if (invocationException != null) {
             if (runtimeFallbackHandler != null) {
@@ -142,7 +156,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             }
         } 
         
-        // 6.) Optionally, we can marshall the response to some other object 
+        // 7.) Optionally, we can marshall the response to some other object 
         if (!fallbackInvoked && runtimeResponseHandler != null) {
             ResponseWrapper<?> responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.returnType());
             Object responseObject = runtimeResponseHandler.apply(responseWrapper);
