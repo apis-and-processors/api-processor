@@ -28,7 +28,7 @@ after_success:
 addons:
   coverity_scan:
     project:
-      name: "cdancy/api-processor"
+      name: "apis-and-processors/api-processor"
       description: "generic java api processor"
     notification_email: christoforever@gmail.com
     build_command:  ./gradlew -s -Dorg.gradle.daemon=false build
