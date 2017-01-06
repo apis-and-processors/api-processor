@@ -104,7 +104,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         Throwable invocationException = null;
         try {
             
-            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, ApiProcessorConstants.RETRY_COUNT);
+            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, ApiProcessorConstants.RETRY_COUNT_DEFAULT);
             String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, ApiProcessorConstants.RETRY_DELAY_START_DEFAULT);
 
             RetryPolicy retryPolicy = new RetryPolicy()
