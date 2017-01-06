@@ -32,9 +32,9 @@ import javax.annotation.Nullable;
  * @author github.
  * @param <T>
  */
-public class InvocationInstance<T> {
+public class InvocationInstance {
     
-    private final Class<T> clazz;
+    private final Class clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
     private final ImmutableMap<String, Annotation> methodAnnotations;
@@ -54,7 +54,7 @@ public class InvocationInstance<T> {
     @Nullable
     private final AbstractResponseHandler responseHandler;
         
-    private InvocationInstance(Class<T> clazz, 
+    private InvocationInstance(Class clazz, 
             ImmutableMap<String, ImmutableList<Annotation>> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
@@ -78,7 +78,7 @@ public class InvocationInstance<T> {
         this.responseHandler = responseHandler;
     }
     
-    public Class<T> clazz() {
+    public Class clazz() {
         return clazz;
     }
     

@@ -76,7 +76,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     protected Object handleInvocation(Object source, Method method, Object[] args) {
                         
         // 1.) Get/Build InvocationInstance from cache.
-        final InvocationInstance<?> invocationInstance = processorCache.invocationInstanceFrom(method, args);
+        final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args);
         
         // 2.) If method is a Delegate then return an instance of its Api/Interface
         if (invocationInstance.methodAnnotation(Delegate.class) != null) {
