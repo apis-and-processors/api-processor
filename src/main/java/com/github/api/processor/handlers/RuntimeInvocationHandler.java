@@ -71,7 +71,6 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
     @Inject
     private ApiProcessorProperties properties;
-    
         
     @Override
     protected Object handleInvocation(Object source, Method method, Object[] args) {
