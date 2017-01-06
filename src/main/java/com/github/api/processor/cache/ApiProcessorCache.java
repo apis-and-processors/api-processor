@@ -54,8 +54,6 @@ import sun.reflect.ReflectionFactory;
 public class ApiProcessorCache {
     
     private static final Logger LOGGER = Logger.getLogger(ApiProcessorCache.class.getName());
-
-    private final Cache<String, Object> cache;
     
     private static final String CLASS_INSTANCE_PREFIX = "ClassInstance@";
     private static final String INVOKABLE_PREFIX = "Invokable@";
@@ -66,8 +64,6 @@ public class ApiProcessorCache {
     private static final String PROXY_IS_NULL = "proxyInterface cannot be null";
     private static final String PROXY_NOT_INTERFACE = "proxyInterface is not an interface";
     private static final String PROXY_INVOKE_HANDLER_IS_NULL = "invocationHandler cannot be null";
-
-    private static final String TYPE_IS_NULL = "clazz cannot be null";
     
     private static final String PROXY_CACHE_MESSAGE = "Caching new Proxy at: {0}";
     private static final String TYPE_CACHE_MESSAGE = "Caching new Type at: {0}";
@@ -75,6 +71,7 @@ public class ApiProcessorCache {
     private static final String METHOD_INSTANCE_CACHE_MESSAGE = "Caching new MethodInstance at: {0}";
     private static final String CLASS_INSTANCE_CACHE_MESSAGE = "Caching new ClassInstance at: {0}";
 
+    private final Cache<String, Object> cache;
 
     /**
      * Create cache from passed properties.
@@ -120,9 +117,7 @@ public class ApiProcessorCache {
      * @param beanClass zero-arg constructor bean class definition.
      * @return newly created Type.
      */
-    public <T> T typeFrom(Class<T> beanClass) {
-        checkNotNull(beanClass, TYPE_IS_NULL);
-        
+    private <T> T typeFrom(Class<T> beanClass) {        
         String key = (TYPE_PREFIX + beanClass.getName()).intern();
         try {
             Object obj = cache.get(key, () -> {
@@ -187,7 +182,7 @@ public class ApiProcessorCache {
      * @param method method definition.
      * @return newly created ClassInstance.
      */
-    public ClassInstance classInstanceFrom(Method method) {
+    private ClassInstance classInstanceFrom(Method method) {
         String key = (CLASS_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName()).intern(); 
         try {
             Invokable inv = invokableFrom(method.getDeclaringClass(), method);
