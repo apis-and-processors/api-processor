@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 /**
  *
  * @author github.
- * @param <T>
  */
 public class InvocationInstance {
     
@@ -105,7 +104,8 @@ public class InvocationInstance {
     }
     
     public <T> ImmutableList<T> classAnnotations(Class<T> clazz) {
-        return (ImmutableList<T>) classAnnotations().get(clazz.getName());
+        ImmutableList<T> foundClassAnnotations = (ImmutableList<T>) classAnnotations().get(clazz.getName());
+        return foundClassAnnotations != null ? foundClassAnnotations : ImmutableList.of();
     }
     
     public String method() {
@@ -122,11 +122,19 @@ public class InvocationInstance {
     }
     
     public <T> ImmutableList<T> combinedAnnotations(Class<T> clazz) {
+        ImmutableList.Builder<T> builder = ImmutableList.builder();
+        
+        T methodAnno = this.methodAnnotation(clazz);
+        if (methodAnno != null) {
+            builder.add(methodAnno);
+        }
+        
         ImmutableList<T> foundClassAnnotations = classAnnotations(clazz);
-        return (ImmutableList<T>) ImmutableList.builder()
-                .add(this.methodAnnotation(clazz))
-                .addAll(foundClassAnnotations)
-                .build();
+        if (foundClassAnnotations != null) {
+            builder.addAll(foundClassAnnotations);
+        }
+        
+        return builder.build();
     }
     
     public ParameterInstance parameterInstance(int index) {
