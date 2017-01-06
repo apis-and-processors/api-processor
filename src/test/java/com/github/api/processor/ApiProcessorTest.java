@@ -33,7 +33,6 @@ import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.google.common.collect.ImmutableList;
-import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -62,9 +61,13 @@ public class ApiProcessorTest {
         @Override
         public Object apply(InvocationInstance object) {
             
-            ImmutableList<Annotation> argsList = object.classAnnotations(Args.class);
-            for(Annotation anno : argsList) {
-                System.out.println("+++++++++++ ANNO: " + anno);
+            ImmutableList<Args> argsList = object.combinedAnnotations(Args.class);
+            for(int i = argsList.size() -1; i >= 0; i--) {
+                Args param = argsList.get(i);
+                System.out.println("-----------found: " + param);
+                for (int j = 0; j < param.value().length; j++) {
+                    System.out.println("---value=" + param.value()[j]);
+                }                
             }
             System.out.println("+++++++++++ FIRST ANNO: " + object.firstClassAnnotation(Args.class));
             System.out.println("+++++++++++ LAST ANNO: " + object.lastClassAnnotation(Args.class));

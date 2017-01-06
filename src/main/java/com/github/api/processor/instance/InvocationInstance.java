@@ -104,8 +104,8 @@ public class InvocationInstance {
         }
     }
     
-    public ImmutableList<Annotation> classAnnotations(Class clazz) {
-        return classAnnotations().get(clazz.getName());
+    public <T> ImmutableList<T> classAnnotations(Class<T> clazz) {
+        return (ImmutableList<T>) classAnnotations().get(clazz.getName());
     }
     
     public String method() {
@@ -119,6 +119,14 @@ public class InvocationInstance {
     public <T> T methodAnnotation(Class<T> clazz) {
         Annotation anno = methodAnnotations().get(clazz.getName());
         return (anno != null) ? clazz.cast(anno) : null;
+    }
+    
+    public <T> ImmutableList<T> combinedAnnotations(Class<T> clazz) {
+        ImmutableList<T> foundClassAnnotations = classAnnotations(clazz);
+        return (ImmutableList<T>) ImmutableList.builder()
+                .add(this.methodAnnotation(clazz))
+                .addAll(foundClassAnnotations)
+                .build();
     }
     
     public ParameterInstance parameterInstance(int index) {
