@@ -28,6 +28,7 @@ import com.github.api.processor.config.StandAloneModules;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.handlers.AbstractRuntimeInvocationHandler;
 import com.github.api.processor.utils.ApiProcessorUtils;
@@ -71,11 +72,10 @@ public class ApiProcessor {
         
         private boolean scanClasspath = false;
         
-        private Class<?> executionContext;
-
         private Class<? extends AbstractExecutionHandler> executionHandler;
         private Class<? extends AbstractErrorHandler> errorHandler;
         private Class<? extends AbstractFallbackHandler> fallbackHandler;
+        private Class<? extends AbstractRequestHandler> requestHandler;
         private Class<? extends AbstractResponseHandler> responseHandler;
         
         public Builder api(Class clazz) {
@@ -131,17 +131,6 @@ public class ApiProcessor {
         }
         
         /**
-         * Set the global ExecutionContext. Optional and defaults to null.
-         * 
-         * @param executionContext global ExecutionContext.
-         * @return this Builder.
-         */
-        public Builder executionContext(Class<?> executionContext) {
-            this.executionContext = checkNotNull(executionContext, "executionContext cannot be null");
-            return this;
-        }
-        
-        /**
          * Set the global ExecutionHandler. Optional and defaults to null.
          * 
          * @param executionHandler global ExecutionHandler.
@@ -177,6 +166,17 @@ public class ApiProcessor {
         /**
          * Set the global ResponseHandler. Optional and defaults to null.
          * 
+         * @param requestHandler global RequestHandler.
+         * @return this Builder.
+         */
+        public Builder requestHandler(Class<? extends AbstractRequestHandler> requestHandler) {
+            this.requestHandler = checkNotNull(requestHandler, "responseHandler cannot be null");
+            return this;
+        }
+        
+        /**
+         * Set the global ResponseHandler. Optional and defaults to null.
+         * 
          * @param responseHandler global ResponseHandler.
          * @return this Builder.
          */
@@ -194,7 +194,7 @@ public class ApiProcessor {
             
             // 1.) Create parent injector from stand alone modules.
             StandAloneModules sam = new StandAloneModules(properties);
-            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionContext, executionHandler, errorHandler, fallbackHandler, responseHandler);
+            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, requestHandler, responseHandler);
             Injector parentInjector = Guice.createInjector(sam, hrm);
 
             // 2.) Gather all Api's passed in and on classpath.

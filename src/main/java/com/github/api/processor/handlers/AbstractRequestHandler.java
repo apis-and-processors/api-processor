@@ -17,26 +17,13 @@
 
 package com.github.api.processor.handlers;
 
-import javax.annotation.Nullable;
+import java.util.function.Function;
 
 /**
  *
  * @author github.
+ * @param <T>
  */
-public interface ProcessorHandles {
-    
-    @Nullable
-    Class<? extends AbstractExecutionHandler> executionHandler();
-    
-    @Nullable
-    Class<? extends AbstractErrorHandler> errorHandler();
-    
-    @Nullable
-    Class<? extends AbstractFallbackHandler> fallbackHandler();
+public abstract class AbstractRequestHandler<T> implements Function<T, T> {
 
-    @Nullable
-    Class<? extends AbstractRequestHandler> requestHandler();
-    
-    @Nullable
-    Class<? extends AbstractResponseHandler> responseHandler();
 }

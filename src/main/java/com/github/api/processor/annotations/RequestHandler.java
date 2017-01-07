@@ -15,28 +15,30 @@
  * limitations under the License.
  */
 
-package com.github.api.processor.handlers;
+package com.github.api.processor.annotations;
 
-import javax.annotation.Nullable;
+import com.github.api.processor.handlers.AbstractRequestHandler;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
  *
  * @author github.
  */
-public interface ProcessorHandles {
+@Target( { TYPE, METHOD } )
+@Retention( RUNTIME )
+public @interface RequestHandler {
     
-    @Nullable
-    Class<? extends AbstractExecutionHandler> executionHandler();
-    
-    @Nullable
-    Class<? extends AbstractErrorHandler> errorHandler();
-    
-    @Nullable
-    Class<? extends AbstractFallbackHandler> fallbackHandler();
-
-    @Nullable
-    Class<? extends AbstractRequestHandler> requestHandler();
-    
-    @Nullable
-    Class<? extends AbstractResponseHandler> responseHandler();
+    /**
+     * Set class definition which extends AbstractRequestHandler. Can
+     * be used like so: @RequestHandler(MyExtendingImpl.class);
+     * 
+     * @return AbstractRequestHandler class. 
+     */ 
+    Class<? extends AbstractRequestHandler> value();
 }

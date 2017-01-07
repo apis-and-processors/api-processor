@@ -20,10 +20,12 @@ package com.github.api.processor.instance;
 import com.github.api.processor.annotations.ErrorHandler;
 import com.github.api.processor.annotations.ExecutionHandler;
 import com.github.api.processor.annotations.FallbackHandler;
+import com.github.api.processor.annotations.RequestHandler;
 import com.github.api.processor.annotations.ResponseHandler;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.handlers.ProcessorHandles;
 import com.google.common.collect.ImmutableList;
@@ -45,6 +47,7 @@ public class ClassInstance<T> implements ProcessorHandles {
     private final Class<? extends AbstractExecutionHandler> executionHandler;
     private final Class<? extends AbstractErrorHandler> errorHandler;
     private final Class<? extends AbstractFallbackHandler> fallbackHandler;
+    private final Class<? extends AbstractRequestHandler> requestHandler;
     private final Class<? extends AbstractResponseHandler> responseHandler;
 
     /**
@@ -58,6 +61,7 @@ public class ClassInstance<T> implements ProcessorHandles {
         Class localExecutionHandler = null;
         Class localErrorHandler = null;
         Class localFallbackHandler = null;
+        Class localRequestHandler = null;
         Class localResponseHandler = null;
         
         this.annotations = buildClassAnnotationMap(clazz);
@@ -87,6 +91,13 @@ public class ClassInstance<T> implements ProcessorHandles {
             localFallbackHandler = anno.value();
         }
         
+        possibleAnnotationList = this.annotations.get(RequestHandler.class.getName());
+        possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
+        if (possibleAnnotation != null) {
+            RequestHandler anno = (RequestHandler)possibleAnnotation;
+            localRequestHandler = anno.value();
+        }
+        
         possibleAnnotationList = this.annotations.get(ResponseHandler.class.getName());
         possibleAnnotation = (possibleAnnotationList != null) ? possibleAnnotationList.get(0) : null;
         if (possibleAnnotation != null) {
@@ -97,6 +108,7 @@ public class ClassInstance<T> implements ProcessorHandles {
         this.executionHandler = localExecutionHandler;
         this.errorHandler = localErrorHandler;
         this.fallbackHandler = localFallbackHandler;
+        this.requestHandler = localRequestHandler;
         this.responseHandler = localResponseHandler;
     }
     
@@ -151,6 +163,11 @@ public class ClassInstance<T> implements ProcessorHandles {
         return this.fallbackHandler;
     }
 
+    @Override
+    public Class<? extends AbstractRequestHandler> requestHandler() {
+        return this.requestHandler;
+    }
+    
     @Override
     public Class<? extends AbstractResponseHandler> responseHandler() {
         return this.responseHandler;

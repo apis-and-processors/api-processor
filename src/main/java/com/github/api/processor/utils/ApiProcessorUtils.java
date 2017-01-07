@@ -22,10 +22,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Throwables;
 
 import com.google.common.collect.Sets;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Singleton;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -77,8 +79,43 @@ public class ApiProcessorUtils {
             noArgConstructor.setAccessible(true);
             return beanClass.cast(noArgConstructor.newInstance(EMPTY_OBJECT_ARRAY)); 
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
-            throw Throwables.propagate(ex);
+            
+            // second attempt at creating generic object from class
+            try {
+                return beanClass.newInstance();
+            } catch (Exception e) {
+                throw Throwables.propagate(e);
+            }
         } 
     }   
+    
+    public Class[] getGenericClassTypes(Class clazz) {
+        TypeToken.TypeSet genericType = TypeToken.of(clazz).getTypes().classes();
+        Iterator<TypeToken> iter = genericType.iterator();
+        String clazzName = clazz.getSuperclass().getCanonicalName();
+        while(iter.hasNext()) {
+            TypeToken typeToken = iter.next();
+            String typeTokenClassName = typeToken.toString();
+            if (typeTokenClassName.startsWith(clazzName)) {
+               String[] typeStrings = typeTokenClassName
+                       .substring(clazzName.length(), typeTokenClassName.length())
+                       .replaceFirst("<", "")
+                       .replaceFirst(">", "")
+                       .replaceAll(" ", "")
+                       .split(",");
+               Class[] typeClasses = new Class[typeStrings.length];
+               for (int i = 0; i < typeClasses.length; i++) {
+                   try {
+                       typeClasses[i] = Class.forName(typeStrings[i]);
+                   } catch (ClassNotFoundException ex) {
+                       throw Throwables.propagate(ex);
+                   }
+               }
+               return typeClasses;
+            }
+        }
+        
+        return new Class[0];
+    }
 
 }

@@ -24,10 +24,12 @@ import com.github.api.processor.annotations.ArgsValue;
 import com.github.api.processor.annotations.Delegate;
 import com.github.api.processor.annotations.ExecutionHandler;
 import com.github.api.processor.annotations.FallbackHandler;
+import com.github.api.processor.annotations.RequestHandler;
 import com.github.api.processor.annotations.ResponseHandler;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.wrappers.ErrorWrapper;
@@ -64,9 +66,9 @@ public class ApiProcessorTest {
         }
     }
         
-    class LocalExecutionHandler extends AbstractExecutionHandler<SpecialBean, Object> {
+    class LocalExecutionHandler extends AbstractExecutionHandler<SpecialBean, String> {
         @Override
-        public Object apply(InvocationInstance<SpecialBean> object) {
+        public String apply(InvocationInstance<SpecialBean> object) {
             
             System.out.println("Context: " + object.context());
             System.out.println("properties: " + object.context().props());
@@ -100,6 +102,14 @@ public class ApiProcessorTest {
         }
     }
             
+    class LocalRequestHandler extends AbstractRequestHandler<SpecialBean> {
+        @Override
+        public SpecialBean apply(SpecialBean object) {
+            System.out.println("______________REQUESTHANDLER: " + object.getClass());
+            return new SpecialBean();
+        }
+    }
+        
     class LocalResponseHandler extends AbstractResponseHandler<SpecialBean, Object> {
         @Override
         public Object apply(ResponseWrapper<SpecialBean> object) {
@@ -124,6 +134,7 @@ public class ApiProcessorTest {
         @Args( { "{message}" } )
         @ExecutionHandler(LocalExecutionHandler.class)
         @ResponseHandler(LocalResponseHandler.class)
+        @RequestHandler(LocalRequestHandler.class)
         String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
@@ -141,7 +152,6 @@ public class ApiProcessorTest {
         
         HelloWorldApi helloWorldApi = ApiProcessor.builder()
                 .scanClasspath()
-                .executionContext(SpecialBean.class)
                 .properties(ApiProcessorConstants.CACHE_EXPIRE, "10000").build()
                 .get(HelloWorldApi.class);
         HelloWorld helloWorld = helloWorldApi.helloWorld();
@@ -150,7 +160,6 @@ public class ApiProcessorTest {
         System.out.println("-----> ReturnValue=" + returnValue);
         System.out.println("----->Ending...");
         
-        Set<Class> fish = new HashSet<>();
     }
 }
 

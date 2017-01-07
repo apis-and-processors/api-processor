@@ -20,6 +20,7 @@ package com.github.api.processor.config;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.DefaultExecutionHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.handlers.AbstractRuntimeInvocationHandler;
@@ -34,53 +35,52 @@ import javax.annotation.Nullable;
  */
 public class HandlerRegistrationModule extends AbstractModule {
         
-    private final Class<?> executionContext;
     private final Class executionHandler;
-    private final Class responseHandler;
     private final Class errorHandler;
     private final Class fallbackHandler;
+    private final Class requestHandler;
+    private final Class responseHandler;
     
     /**
      * Create HandlerRegistrationModule from the potentially non-null classes.
      * 
-     * @param executionContext default ExecutionContext to set.
      * @param executionHandler default ExecutionHandler to set.
      * @param errorHandler default ErrorHandler to set.
      * @param fallbackHandler default FallbackHandler to set.
+     * @param requestHandler default RequestHandler to set.
      * @param responseHandler default ResponseHandler to set.
      */
-    public HandlerRegistrationModule(@Nullable Class<?> executionContext,
-            @Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
+    public HandlerRegistrationModule(@Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
             @Nullable Class<? extends AbstractErrorHandler> errorHandler,
             @Nullable Class<? extends AbstractFallbackHandler> fallbackHandler,
+            @Nullable Class<? extends AbstractRequestHandler> requestHandler,
             @Nullable Class<? extends AbstractResponseHandler> responseHandler) {
-        this.executionContext = executionContext;
         this.executionHandler = executionHandler;
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
+        this.requestHandler = requestHandler;
         this.responseHandler = responseHandler;
     }
     
     @Override 
     protected void configure() {
-
-        if (executionContext != null) {
-            bind(Class.class).annotatedWith(Names.named("executionContext")).toInstance(this.executionContext);
-        }
         
         Class defaultExecutionHandler = (executionHandler != null) 
                 ? executionHandler 
                 : DefaultExecutionHandler.class;
         bind(AbstractExecutionHandler.class).to(defaultExecutionHandler);
-        
-        if (responseHandler != null) {
-            bind(AbstractResponseHandler.class).to(responseHandler);
-        }
+
         if (errorHandler != null) {
             bind(AbstractErrorHandler.class).to(errorHandler);
         }
         if (fallbackHandler != null) {
             bind(AbstractFallbackHandler.class).to(fallbackHandler);
+        }
+        if (requestHandler != null) {
+            bind(AbstractRequestHandler.class).to(requestHandler);
+        }
+        if (responseHandler != null) {
+            bind(AbstractResponseHandler.class).to(responseHandler);
         }
         
         bind(AbstractRuntimeInvocationHandler.class).to(RuntimeInvocationHandler.class);

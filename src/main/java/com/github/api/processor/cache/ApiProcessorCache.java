@@ -26,6 +26,7 @@ import com.github.api.processor.ApiProcessorProperties;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.instance.ClassInstance;
 import com.github.api.processor.instance.InvocationInstance;
@@ -194,10 +195,9 @@ public class ApiProcessorCache {
      * 
      * @param method method definition.
      * @param args argument list.
-     * @param context optional context.
      * @return newly created InvocationInstance.
      */
-    public InvocationInstance invocationInstanceFrom(Method method, Object [] args, Object context) {  
+    public InvocationInstance invocationInstanceFrom(Method method, Object [] args) {  
         ClassInstance classInstance = classInstanceFrom(method);
         MethodInstance methodInstance = methodInstanceFrom(method);
         
@@ -210,6 +210,9 @@ public class ApiProcessorCache {
         Class<? extends AbstractFallbackHandler> fallbackHandlerClass = (methodInstance.fallbackHandler() != null) 
                 ? methodInstance.fallbackHandler() 
                 : classInstance.fallbackHandler();
+        Class<? extends AbstractRequestHandler> requestHandlerClass = (methodInstance.requestHandler()!= null) 
+                ? methodInstance.requestHandler()
+                : classInstance.requestHandler();
         Class<? extends AbstractResponseHandler> responseHandlerClass = (methodInstance.responseHandler() != null) 
                 ? methodInstance.responseHandler() 
                 : classInstance.responseHandler();
@@ -217,15 +220,16 @@ public class ApiProcessorCache {
         AbstractExecutionHandler executionHandler = (executionHandlerClass != null) ? typeFrom(executionHandlerClass) : null;
         AbstractErrorHandler errorHandler = errorHandlerClass != null ? typeFrom(errorHandlerClass) : null; 
         AbstractFallbackHandler fallbackHandler = fallbackHandlerClass != null ? typeFrom(fallbackHandlerClass) : null;
+        AbstractRequestHandler requestHandler = requestHandlerClass != null ? typeFrom(requestHandlerClass) : null;
         AbstractResponseHandler responseHandler = responseHandlerClass != null ? typeFrom(responseHandlerClass) : null;
                         
-        return InvocationInstance.newInstance(context,
-                classInstance, 
+        return InvocationInstance.newInstance(classInstance, 
                 methodInstance, 
                 args,
                 executionHandler,
                 errorHandler,
                 fallbackHandler,
+                requestHandler,
                 responseHandler);
     }
 }

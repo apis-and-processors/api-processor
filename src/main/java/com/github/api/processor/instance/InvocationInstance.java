@@ -20,11 +20,13 @@ package com.github.api.processor.instance;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 /**
@@ -33,7 +35,7 @@ import javax.annotation.Nullable;
  */
 public class InvocationInstance<V> {
     
-    private final V context;
+    private final AtomicReference<V> context = new AtomicReference<V>(null);
     private final Class clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
@@ -50,12 +52,14 @@ public class InvocationInstance<V> {
         
     @Nullable
     private final AbstractFallbackHandler fallbackHandler;
-
+    
+    @Nullable
+    private final AbstractRequestHandler requestHandler;
+    
     @Nullable
     private final AbstractResponseHandler responseHandler;
         
-    private InvocationInstance(V context,
-            Class clazz, 
+    private InvocationInstance(Class clazz, 
             ImmutableMap<String, ImmutableList<Annotation>> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
@@ -65,8 +69,8 @@ public class InvocationInstance<V> {
             AbstractExecutionHandler executionHandler,
             AbstractErrorHandler errorHandler,
             AbstractFallbackHandler fallbackHandler,
+            AbstractRequestHandler requestHandler,
             AbstractResponseHandler responseHandler) {
-        this.context = context;
         this.clazz = clazz;
         this.classAnnotations = classAnnotations;
         this.method = method;
@@ -77,11 +81,16 @@ public class InvocationInstance<V> {
         this.executionHandler = executionHandler;
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
+        this.requestHandler = requestHandler;
         this.responseHandler = responseHandler;
     }
     
+    public void context(V context) {
+        this.context.set(context);
+    }
+    
     public V context() {
-        return context;
+        return context.get();
     }
     
     public Class clazz() {
@@ -173,20 +182,20 @@ public class InvocationInstance<V> {
      * @param executionHandler the executionHandler used for this invocation.
      * @param errorHandler the errorHandler used for this invocation.
      * @param fallbackHandler the fallbackHandler used for this invocation.
+     * @param requestHandler the requestHandler used for this invocation.
      * @param responseHandler the responseHandler used for this invocation.
      * @return newly created InvocationInstance.
      */
-    public static InvocationInstance newInstance(Object context,
-            ClassInstance classInstance, 
+    public static InvocationInstance newInstance(ClassInstance classInstance, 
             MethodInstance methodInstance, 
             Object [] args,
             AbstractExecutionHandler executionHandler,
             AbstractErrorHandler errorHandler,
             AbstractFallbackHandler fallbackHandler,
+            AbstractRequestHandler requestHandler,
             AbstractResponseHandler responseHandler) {
         
-        return new InvocationInstance(context,
-                classInstance.clazz(), 
+        return new InvocationInstance(classInstance.clazz(), 
                 classInstance.annotations(), 
                 methodInstance.method(), 
                 methodInstance.annotations(), 
@@ -196,6 +205,7 @@ public class InvocationInstance<V> {
                 executionHandler, 
                 errorHandler, 
                 fallbackHandler, 
+                requestHandler,
                 responseHandler);
     }
 
@@ -211,7 +221,11 @@ public class InvocationInstance<V> {
         return this.fallbackHandler;
     }
 
+    public AbstractRequestHandler requestHandler() {
+        return this.requestHandler;
+    }
+    
     public AbstractResponseHandler responseHandler() {
         return this.responseHandler;
-    }
+    }  
 }
