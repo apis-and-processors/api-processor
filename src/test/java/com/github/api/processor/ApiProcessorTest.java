@@ -24,6 +24,7 @@ import com.github.api.processor.annotations.ArgsValue;
 import com.github.api.processor.annotations.Delegate;
 import com.github.api.processor.annotations.ExecutionHandler;
 import com.github.api.processor.annotations.FallbackHandler;
+import com.github.api.processor.annotations.ResponseHandler;
 import com.github.api.processor.handlers.AbstractErrorHandler;
 import com.github.api.processor.handlers.AbstractExecutionHandler;
 import com.github.api.processor.handlers.AbstractFallbackHandler;
@@ -34,32 +35,42 @@ import com.github.api.processor.wrappers.FallbackWrapper;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.testng.annotations.Test;
+import org.testng.collections.Maps;
 
 public class ApiProcessorTest {
     
-    class LocalErrorHandler extends AbstractErrorHandler<String> {
+    private class SpecialBean {
+        private Map<String, String> properties = Maps.newHashMap();
+        
+        public SpecialBean() {
+            properties = Maps.newHashMap();
+        }
+        
+        public Map<String, String> props() {
+            return properties;
+        }
+    }
+    
+    class LocalErrorHandler extends AbstractErrorHandler<SpecialBean> {
         @Override
-        public Throwable apply(ErrorWrapper<String> object) {
+        public Throwable apply(ErrorWrapper<SpecialBean> object) {
             
             System.out.println("Hello local error");
             return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
-   
-    class LocalExecutionHandler2 extends AbstractExecutionHandler<Object> {
-        @Override
-        public Object apply(InvocationInstance object) {
-            //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            return "fish and fries";
-        }
-    }
         
-    class LocalExecutionHandler extends AbstractExecutionHandler<Object> {
+    class LocalExecutionHandler extends AbstractExecutionHandler<SpecialBean, Object> {
         @Override
-        public Object apply(InvocationInstance object) {
+        public Object apply(InvocationInstance<SpecialBean> object) {
+            
+            System.out.println("Context: " + object.context());
+            System.out.println("properties: " + object.context().props());
+            object.context().properties.put("fish", "bear");
             
             ImmutableList<Args> argsList = object.combinedAnnotations(Args.class);
             for(int i = argsList.size() -1; i >= 0; i--) {
@@ -74,8 +85,7 @@ public class ApiProcessorTest {
             
             System.out.println("++++++++++param count: " + object.parameterCount());
             
-            //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            throw new RuntimeException("fish!!!!");
+            return "monkey";
         }
     }
         
@@ -90,10 +100,10 @@ public class ApiProcessorTest {
         }
     }
             
-    class LocalResponseHandler extends AbstractResponseHandler<Object> {
+    class LocalResponseHandler extends AbstractResponseHandler<SpecialBean, Object> {
         @Override
-        public Object apply(ResponseWrapper object) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        public Object apply(ResponseWrapper<SpecialBean> object) {
+            return object.returnValue;
         }
     }
                 
@@ -109,12 +119,11 @@ public class ApiProcessorTest {
     
     @Api
     @Args( { "-am" } )
-    @ExecutionHandler(LocalExecutionHandler2.class)
     static interface HelloWorld extends Bears {
         
         @Args( { "{message}" } )
         @ExecutionHandler(LocalExecutionHandler.class)
-        @FallbackHandler(LocalFallbackHandler.class)
+        @ResponseHandler(LocalResponseHandler.class)
         String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
@@ -132,10 +141,11 @@ public class ApiProcessorTest {
         
         HelloWorldApi helloWorldApi = ApiProcessor.builder()
                 .scanClasspath()
+                .executionContext(SpecialBean.class)
                 .properties(ApiProcessorConstants.CACHE_EXPIRE, "10000").build()
                 .get(HelloWorldApi.class);
         HelloWorld helloWorld = helloWorldApi.helloWorld();
-        Object returnValue = helloWorld.helloWorld("fish", 123, null);
+        String returnValue = helloWorld.helloWorld("fish", 123, null);
 
         System.out.println("-----> ReturnValue=" + returnValue);
         System.out.println("----->Ending...");

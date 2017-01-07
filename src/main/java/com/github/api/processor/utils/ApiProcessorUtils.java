@@ -19,10 +19,13 @@ package com.github.api.processor.utils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+import com.google.common.base.Throwables;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 
 /**
@@ -35,6 +38,10 @@ public class ApiProcessorUtils {
     private static final String CLASS_ANNO_NULL = "class annotataion cannot be null";
     private static final String CLASS_ANNO_REQUIRED = "class must be an annotation";
 
+    private static final Object [] EMPTY_OBJECT_ARRAY = new Object[1];
+    private static final Constructor OBJECT_CONSTRUCTOR = Object.class.getDeclaredConstructors()[0];
+    
+    
     /**
      * Find all classes on the path annotated with given annotation.
      * 
@@ -51,4 +58,27 @@ public class ApiProcessorUtils {
                 }).scan();
         return builtApis;
     }
+    
+    public <T> T newInterfaceInstance(Class<T> beanInterface) {   
+        try {
+            Constructor genericConstructor = sun.reflect.ReflectionFactory
+                    .getReflectionFactory()
+                    .newConstructorForSerialization(beanInterface, OBJECT_CONSTRUCTOR);
+
+            return beanInterface.cast(genericConstructor.newInstance()); 
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
+            throw Throwables.propagate(ex);
+        } 
+    }     
+    
+    public <T> T newClassInstance(Class<T> beanClass) {   
+        try {
+            Constructor noArgConstructor = beanClass.getDeclaredConstructors()[0];
+            noArgConstructor.setAccessible(true);
+            return beanClass.cast(noArgConstructor.newInstance(EMPTY_OBJECT_ARRAY)); 
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
+            throw Throwables.propagate(ex);
+        } 
+    }   
+
 }

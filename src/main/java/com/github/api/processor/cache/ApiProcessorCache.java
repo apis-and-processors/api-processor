@@ -30,21 +30,21 @@ import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.instance.ClassInstance;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.instance.MethodInstance;
+import com.github.api.processor.utils.ApiProcessorUtils;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.reflect.Invokable;
 import com.google.common.reflect.Reflection;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import sun.reflect.ReflectionFactory;
 
 /**
  *
@@ -72,6 +72,9 @@ public class ApiProcessorCache {
     private static final String CLASS_INSTANCE_CACHE_MESSAGE = "Caching new ClassInstance at: {0}";
 
     private final Cache<String, Object> cache;
+    
+    @Inject
+    private ApiProcessorUtils apiProcessorUtils;
 
     /**
      * Create cache from passed properties.
@@ -120,20 +123,11 @@ public class ApiProcessorCache {
     private <T> T typeFrom(Class<T> beanClass) {        
         String key = (TYPE_PREFIX + beanClass.getName()).intern();
         try {
-            Object obj = cache.get(key, () -> {
+            return (T) cache.get(key, () -> {
                 LOGGER.log(Level.CONFIG, TYPE_CACHE_MESSAGE, key);
-                Constructor genericConstructor = ReflectionFactory
-                        .getReflectionFactory()
-                        .newConstructorForSerialization(beanClass, Object.class.getDeclaredConstructors()[0]);
-
-                Constructor<?> ctor = ReflectionFactory
-                        .getReflectionFactory()
-                        .newConstructorForSerialization(beanClass, genericConstructor);
-
-                return ctor.newInstance();                
+                return apiProcessorUtils.newInterfaceInstance(beanClass);
             });
-            return beanClass.cast(obj);
-        } catch (SecurityException | IllegalArgumentException | ExecutionException ex) {
+        } catch (ExecutionException ex) {
             throw Throwables.propagate(ex);
         } 
     }
@@ -200,9 +194,10 @@ public class ApiProcessorCache {
      * 
      * @param method method definition.
      * @param args argument list.
+     * @param context optional context.
      * @return newly created InvocationInstance.
      */
-    public InvocationInstance invocationInstanceFrom(Method method, Object [] args) {  
+    public InvocationInstance invocationInstanceFrom(Method method, Object [] args, Object context) {  
         ClassInstance classInstance = classInstanceFrom(method);
         MethodInstance methodInstance = methodInstanceFrom(method);
         
@@ -224,7 +219,8 @@ public class ApiProcessorCache {
         AbstractFallbackHandler fallbackHandler = fallbackHandlerClass != null ? typeFrom(fallbackHandlerClass) : null;
         AbstractResponseHandler responseHandler = responseHandlerClass != null ? typeFrom(responseHandlerClass) : null;
                         
-        return InvocationInstance.newInstance(classInstance, 
+        return InvocationInstance.newInstance(context,
+                classInstance, 
                 methodInstance, 
                 args,
                 executionHandler,

@@ -25,6 +25,7 @@ import com.github.api.processor.handlers.AbstractResponseHandler;
 import com.github.api.processor.handlers.AbstractRuntimeInvocationHandler;
 import com.github.api.processor.handlers.RuntimeInvocationHandler;
 import com.google.inject.AbstractModule;
+import com.google.inject.name.Names;
 import javax.annotation.Nullable;
 
 /**
@@ -33,6 +34,7 @@ import javax.annotation.Nullable;
  */
 public class HandlerRegistrationModule extends AbstractModule {
         
+    private final Class<?> executionContext;
     private final Class executionHandler;
     private final Class responseHandler;
     private final Class errorHandler;
@@ -41,26 +43,31 @@ public class HandlerRegistrationModule extends AbstractModule {
     /**
      * Create HandlerRegistrationModule from the potentially non-null classes.
      * 
+     * @param executionContext default ExecutionContext to set.
      * @param executionHandler default ExecutionHandler to set.
      * @param errorHandler default ErrorHandler to set.
      * @param fallbackHandler default FallbackHandler to set.
      * @param responseHandler default ResponseHandler to set.
      */
-    public HandlerRegistrationModule(@Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
+    public HandlerRegistrationModule(@Nullable Class<?> executionContext,
+            @Nullable Class<? extends AbstractExecutionHandler> executionHandler, 
             @Nullable Class<? extends AbstractErrorHandler> errorHandler,
             @Nullable Class<? extends AbstractFallbackHandler> fallbackHandler,
             @Nullable Class<? extends AbstractResponseHandler> responseHandler) {
+        this.executionContext = executionContext;
         this.executionHandler = executionHandler;
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
         this.responseHandler = responseHandler;
     }
-            
+    
     @Override 
     protected void configure() {
 
-        bind(AbstractRuntimeInvocationHandler.class).to(RuntimeInvocationHandler.class);
-
+        if (executionContext != null) {
+            bind(Class.class).annotatedWith(Names.named("executionContext")).toInstance(this.executionContext);
+        }
+        
         Class defaultExecutionHandler = (executionHandler != null) 
                 ? executionHandler 
                 : DefaultExecutionHandler.class;
@@ -75,5 +82,7 @@ public class HandlerRegistrationModule extends AbstractModule {
         if (fallbackHandler != null) {
             bind(AbstractFallbackHandler.class).to(fallbackHandler);
         }
+        
+        bind(AbstractRuntimeInvocationHandler.class).to(RuntimeInvocationHandler.class);
     }
 }

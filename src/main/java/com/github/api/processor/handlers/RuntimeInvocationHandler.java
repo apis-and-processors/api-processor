@@ -23,11 +23,16 @@ import com.github.api.processor.annotations.Delegate;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.cache.ApiProcessorCache;
+import com.github.api.processor.utils.ApiProcessorUtils;
 import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
 import com.google.common.base.Throwables;
+import com.google.inject.ConfigurationException;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,8 +57,14 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private static final String RETRY_RUN_MESSAGE = "Invocation attempt {0} on {1}";
     
     @Inject
-    ApiProcessorCache processorCache;
+    Injector injector;
         
+    @Inject
+    ApiProcessorCache processorCache;
+    
+    @Inject
+    ApiProcessorUtils processorUtils;
+    
     @Inject
     AbstractExecutionHandler abstractExecutionHandler;
     
@@ -74,9 +85,9 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
     @Override
     protected Object handleInvocation(Object source, Method method, Object[] args) {
-                        
+        
         // 1.) Get/Build InvocationInstance from cache.
-        final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args);
+        final InvocationInstance invocationInstance = processorCache.invocationInstanceFrom(method, args, optionalContext());
         
         // 2.) If method is a Delegate then return an instance of its Api/Interface
         if (invocationInstance.methodAnnotation(Delegate.class) != null) {
@@ -157,11 +168,20 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
         // 7.) Optionally, we can marshall the response to some other object 
         if (!fallbackInvoked && runtimeResponseHandler != null) {
-            ResponseWrapper<?> responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.returnType());
+            ResponseWrapper<?> responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.context(), invocationInstance.returnType());
             Object responseObject = runtimeResponseHandler.apply(responseWrapper);
             responseReference.set(responseObject);
         } 
         
         return responseReference.get();
+    }
+    
+    private Object optionalContext() {
+        try {
+            Class<?> foundClass = injector.getInstance(Key.get(Class.class, Names.named("executionContext")));
+            return processorUtils.newClassInstance(foundClass);
+        } catch (ConfigurationException cfe) {
+            return null;
+        }
     }
 }

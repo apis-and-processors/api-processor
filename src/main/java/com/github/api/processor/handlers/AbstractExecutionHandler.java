@@ -23,8 +23,9 @@ import java.util.function.Function;
 /**
  *
  * @author github.
+ * @param <V>
  * @param <T>
  */
-public abstract class AbstractExecutionHandler<T> implements Function<InvocationInstance, T> {
+public abstract class AbstractExecutionHandler<T, V> implements Function<InvocationInstance<T>, V> {
 
 }

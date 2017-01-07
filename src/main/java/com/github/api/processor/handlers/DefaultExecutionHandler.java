@@ -25,10 +25,10 @@ import com.google.inject.Singleton;
  * @author github.
  */
 @Singleton
-public class DefaultExecutionHandler extends AbstractExecutionHandler<Object> {
+public class DefaultExecutionHandler extends AbstractExecutionHandler<Void, Object> {
 
     @Override
-    public Object apply(InvocationInstance invocationInstance) {
+    public Object apply(InvocationInstance<Void> invocationInstance) {
         return null;
     }
 }

@@ -71,6 +71,8 @@ public class ApiProcessor {
         
         private boolean scanClasspath = false;
         
+        private Class<?> executionContext;
+
         private Class<? extends AbstractExecutionHandler> executionHandler;
         private Class<? extends AbstractErrorHandler> errorHandler;
         private Class<? extends AbstractFallbackHandler> fallbackHandler;
@@ -129,6 +131,17 @@ public class ApiProcessor {
         }
         
         /**
+         * Set the global ExecutionContext. Optional and defaults to null.
+         * 
+         * @param executionContext global ExecutionContext.
+         * @return this Builder.
+         */
+        public Builder executionContext(Class<?> executionContext) {
+            this.executionContext = checkNotNull(executionContext, "executionContext cannot be null");
+            return this;
+        }
+        
+        /**
          * Set the global ExecutionHandler. Optional and defaults to null.
          * 
          * @param executionHandler global ExecutionHandler.
@@ -181,7 +194,7 @@ public class ApiProcessor {
             
             // 1.) Create parent injector from stand alone modules.
             StandAloneModules sam = new StandAloneModules(properties);
-            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionHandler, errorHandler, fallbackHandler, responseHandler);
+            HandlerRegistrationModule hrm = new HandlerRegistrationModule(executionContext, executionHandler, errorHandler, fallbackHandler, responseHandler);
             Injector parentInjector = Guice.createInjector(sam, hrm);
 
             // 2.) Gather all Api's passed in and on classpath.

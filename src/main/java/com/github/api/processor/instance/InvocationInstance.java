@@ -31,8 +31,9 @@ import javax.annotation.Nullable;
  *
  * @author github.
  */
-public class InvocationInstance {
+public class InvocationInstance<V> {
     
+    private final V context;
     private final Class clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
@@ -53,7 +54,8 @@ public class InvocationInstance {
     @Nullable
     private final AbstractResponseHandler responseHandler;
         
-    private InvocationInstance(Class clazz, 
+    private InvocationInstance(V context,
+            Class clazz, 
             ImmutableMap<String, ImmutableList<Annotation>> classAnnotations, 
             String method, 
             ImmutableMap<String, Annotation> methodAnnotations, 
@@ -64,6 +66,7 @@ public class InvocationInstance {
             AbstractErrorHandler errorHandler,
             AbstractFallbackHandler fallbackHandler,
             AbstractResponseHandler responseHandler) {
+        this.context = context;
         this.clazz = clazz;
         this.classAnnotations = classAnnotations;
         this.method = method;
@@ -75,6 +78,10 @@ public class InvocationInstance {
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
         this.responseHandler = responseHandler;
+    }
+    
+    public V context() {
+        return context;
     }
     
     public Class clazz() {
@@ -159,6 +166,7 @@ public class InvocationInstance {
     /**
      * Create new InvocationInstance from passed parameters.
      * 
+     * @param context optional context.
      * @param classInstance the classInstance used to query for annotations.
      * @param methodInstance the methodInstance used to query for annotations.
      * @param args the parameter arguments for this invocation.
@@ -168,7 +176,8 @@ public class InvocationInstance {
      * @param responseHandler the responseHandler used for this invocation.
      * @return newly created InvocationInstance.
      */
-    public static InvocationInstance newInstance(ClassInstance classInstance, 
+    public static InvocationInstance newInstance(Object context,
+            ClassInstance classInstance, 
             MethodInstance methodInstance, 
             Object [] args,
             AbstractExecutionHandler executionHandler,
@@ -176,7 +185,8 @@ public class InvocationInstance {
             AbstractFallbackHandler fallbackHandler,
             AbstractResponseHandler responseHandler) {
         
-        return new InvocationInstance(classInstance.clazz(), 
+        return new InvocationInstance(context,
+                classInstance.clazz(), 
                 classInstance.annotations(), 
                 methodInstance.method(), 
                 methodInstance.annotations(), 

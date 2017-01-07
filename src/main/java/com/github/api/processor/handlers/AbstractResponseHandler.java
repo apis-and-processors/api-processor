@@ -23,7 +23,9 @@ import java.util.function.Function;
 /**
  *
  * @author github.
+ * @param <T>
+ * @param <V>
  */
-public abstract class AbstractResponseHandler<T> implements Function<ResponseWrapper<T>, T> {
+public abstract class AbstractResponseHandler<T, V> implements Function<ResponseWrapper<T>, V> {
 
 }
