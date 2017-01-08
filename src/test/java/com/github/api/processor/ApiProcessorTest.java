@@ -22,6 +22,7 @@ import com.github.api.processor.annotations.Api;
 import com.github.api.processor.annotations.Args;
 import com.github.api.processor.annotations.ArgsValue;
 import com.github.api.processor.annotations.Delegate;
+import com.github.api.processor.annotations.ErrorHandler;
 import com.github.api.processor.annotations.ExecutionHandler;
 import com.github.api.processor.annotations.FallbackHandler;
 import com.github.api.processor.annotations.RequestHandler;
@@ -57,11 +58,11 @@ public class ApiProcessorTest {
         }
     }
     
-    class LocalErrorHandler extends AbstractErrorHandler<SpecialBean> {
+    class LocalErrorHandler extends AbstractErrorHandler<String> {
         @Override
-        public Throwable apply(ErrorWrapper<SpecialBean> object) {
+        public Throwable apply(ErrorWrapper<String> object) {
             
-            System.out.println("Hello local error");
+            System.out.println("*************Hello local error: " + object.context());
             return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     }
@@ -87,7 +88,8 @@ public class ApiProcessorTest {
             
             System.out.println("++++++++++param count: " + object.parameterCount());
             
-            return "monkey";
+            //return "monkey";
+            throw new RuntimeException("Got a FAILURE");
         }
     }
         
@@ -96,9 +98,9 @@ public class ApiProcessorTest {
         public String apply(FallbackWrapper object) {
             
             System.out.println("Exepected return-type: " + object.returnType);
-            System.out.println("Thrown exception: " + object.thrownException.getClass());
+            System.out.println("Thrown exception: " + object.thrownException.getClass() + " message: " + object.thrownException.getMessage());
             System.out.println("Falling back to null");
-            return null;
+            return "fish";
         }
     }
             
@@ -113,6 +115,7 @@ public class ApiProcessorTest {
     class LocalResponseHandler extends AbstractResponseHandler<SpecialBean, Object> {
         @Override
         public Object apply(ResponseWrapper<SpecialBean> object) {
+            System.out.println("@@@@@@@@@@@@ INSIDE @@@@@@@@@@@@@22");
             return object.returnValue;
         }
     }
@@ -132,9 +135,11 @@ public class ApiProcessorTest {
     static interface HelloWorld extends Bears {
         
         @Args( { "{message}" } )
-        @ExecutionHandler(LocalExecutionHandler.class)
         @ResponseHandler(LocalResponseHandler.class)
+        @ExecutionHandler(LocalExecutionHandler.class)
         @RequestHandler(LocalRequestHandler.class)
+        @ErrorHandler(LocalErrorHandler.class)
+        @FallbackHandler(LocalFallbackHandler.class)
         String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     

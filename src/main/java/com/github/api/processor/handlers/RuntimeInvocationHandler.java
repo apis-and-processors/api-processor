@@ -135,24 +135,23 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             executionContext = runtimeRequestHandler.apply(executionContext);
             
             if (executionContext != null) {
-                if (!genericExecutionType.equals(executionContext.getClass())) {
+                if (genericExecutionType.equals(executionContext.getClass())) {
+                    // 4.2) Re-inject members if hashCodes are different.
+                    if (executionContext.hashCode() != currentHashCode) {
+                        LOGGER.log(Level.WARNING, RE_INJECT_MEMBERS);
+                        injector.injectMembers(executionContext);
+                    }                    
+                } else {
                     throw new TypeMismatchException("RequestHandler (" 
                             + runtimeRequestHandler.getClass().getCanonicalName() + ") returned type '" 
                             + executionContext.getClass().getCanonicalName() + "' while ExecutionHandler (" 
                             + runtimeExecutionHandler.getClass().getCanonicalName() + ") expects type '" 
                             + genericExecutionType.getCanonicalName() + "'. These MUST be the same!!!");
-                } else {
-                    
-                    // 4.2) Re-inject members if hashCodes are different.
-                    if (executionContext.hashCode() != currentHashCode) {
-                        LOGGER.log(Level.WARNING, RE_INJECT_MEMBERS);
-                        injector.injectMembers(executionContext);
-                    }
                 }
             } else {
                 throw new NullPointerException("Returned value from " 
-                        + runtimeRequestHandler.getClass().getCanonicalName() + " cannot be null");
-
+                        + runtimeRequestHandler.getClass().getCanonicalName() 
+                        + " cannot be null");
             }
         } else {
             executionContext = getInstance(genericExecutionType);
@@ -190,10 +189,18 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         // 6.) Optionally, if exception was found during execution then pass to errorHandler for marshalling
         if (invocationException != null && runtimeErrorHandler != null) {
             try {
-                ErrorWrapper errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
-                Throwable possibleThrowable = (Throwable) runtimeErrorHandler.apply(errorWrapper);
-                if (possibleThrowable != null) {
-                    invocationException = possibleThrowable;
+                Class genericErrorType = processorUtils.getGenericClassTypes(runtimeErrorHandler.getClass())[0];
+                if (genericErrorType.equals(executionContext.getClass())) {
+                    ErrorWrapper<?> errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
+                    Throwable possibleThrowable = (Throwable) runtimeErrorHandler.apply(errorWrapper);
+                    if (possibleThrowable != null) {
+                        invocationException = possibleThrowable;
+                    }                         
+                } else {                    
+                    throw new TypeMismatchException("ErrorHandler (" 
+                            + runtimeErrorHandler.getClass().getCanonicalName() + ") takes type '" 
+                            + genericErrorType.getCanonicalName() + "' but is required to accept type '" 
+                            + genericExecutionType.getCanonicalName() + "'. These MUST be the same!!!");
                 }
             } catch (Exception propagatedException) {
                 invocationException = propagatedException;
