@@ -125,7 +125,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                 runtimeResponseHandler,
                 invocationInstance.returnType().getRawType());
                 
-        // 4.) 2 things are happening below: we are optionally executing a RequestHandler and 
+        // 5.) Two things are happening below: we are optionally executing a RequestHandler and 
         //     generating, not optional, an executionContext. The RequestHandler takes in an 
         //     executionContext which is why we have to build/generate it as part of its 
         //     invocation. If we don't execute a RequestHandler we are still required to 
@@ -133,104 +133,145 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         Object executionContext;
         Class genericExecutionType = processorUtils.getGenericClassTypes(runtimeExecutionHandler.getClass())[0];
         if (runtimeRequestHandler != null) {
-            Class[] genericRequestTypes = processorUtils.getGenericClassTypes(runtimeRequestHandler.getClass());
-            executionContext = getInstance(genericRequestTypes[0]);
-            
-            // 4.1) Because execution of the RequestHandler is allowed to return a 
-            //      different type of Object than what potentially went in, we need 
-            //      to check if things ARE different and if so inject potential members.
-            Object possibleyNewObject = runtimeRequestHandler.apply(executionContext);            
-            if (possibleyNewObject != null) {
-                
-                // 4.2) Re-inject members if hashCodes are different.
-                if (executionContext.hashCode() != possibleyNewObject.hashCode()) {                            
-                    injector.injectMembers(possibleyNewObject);
-                    executionContext = possibleyNewObject;
-                } 
-            } else {
-                
-                // 4.3) A returned NULL executionContext from the RequestHandler 
-                //      is only allowed if the ExecutionHandler has an input of 
-                //      type java.lang.Void.
-                if (!genericExecutionType.equals(Primitive.VOID.getRawClass())) {
-                    throw new NullPointerException("RequestHandler (" 
-                            + runtimeRequestHandler.getClass().getCanonicalName() + ") returned NULL while ExecutionHandler '" 
-                            + runtimeExecutionHandler.getClass().getCanonicalName() + "' expects an input of type '" 
-                            + genericExecutionType.getCanonicalName() + "'. This is only allowed if the input is of type '" 
-                            + Primitive.VOID.getRawClass() + "'");
-                }
-            }
+            Class[] requestTypes = processorUtils.getGenericClassTypes(runtimeRequestHandler.getClass()); 
+            executionContext = processRequestHandler(runtimeRequestHandler,
+                    runtimeExecutionHandler,
+                    getInstance(requestTypes[0]),
+                    genericExecutionType);
         } else {
             executionContext = getInstance(genericExecutionType);
         }
        
-        // 5.) Pass InvocationInstance to ExecutionHandler for runtime execution.
+        // 6.) Pass InvocationInstance to ExecutionHandler for runtime execution.
         final AtomicReference<Object> responseReference = new AtomicReference();
         Throwable invocationException = null;
         try {
-            
-            // set context for execution
-            invocationInstance.context(executionContext);
-
-            String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, ApiProcessorConstants.RETRY_COUNT_DEFAULT);
-            String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, ApiProcessorConstants.RETRY_DELAY_START_DEFAULT);
-
-            RetryPolicy retryPolicy = new RetryPolicy()
-                    .withDelay(Long.valueOf(retryDelayStart), TimeUnit.MILLISECONDS)
-                    .withMaxRetries(Integer.valueOf(retryCount));
-            
-            Failsafe.with(retryPolicy)
-                    .onFailedAttempt(attempt -> LOGGER.log(Level.WARNING, RETRY_ATTEMPT_MESSAGE, attempt.getMessage()))
-                    .onFailure(failure -> LOGGER.log(Level.SEVERE, RETRY_FAILED_MESSAGE, failure.getMessage()))
-                    .run((ctx) -> { 
-                        Object [] loggerParams = {ctx.getExecutions() + 1, invocationInstance.toString()};
-                        LOGGER.log(Level.INFO, RETRY_RUN_MESSAGE, loggerParams);
-                        Object responseObject = runtimeExecutionHandler.apply(invocationInstance);
-                        responseReference.set(responseObject); 
-                    });
-                        
+            invocationInstance.context(executionContext); // set context for execution
+            processExecutionHandler(runtimeExecutionHandler, 
+                    responseReference, 
+                    invocationInstance);
         } catch (Exception e) {
             invocationException = e;
         }
         
-        // 6.) Optionally, if exception was found during execution then pass to errorHandler for marshalling
+        // 7.) Optionally, if exception was found during execution then pass to 
+        //     errorHandler for marshalling into some other type of Throwable.
         if (invocationException != null && runtimeErrorHandler != null) {
-            try {
-                ErrorWrapper<?> errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
-                Throwable possibleThrowable = (Throwable) runtimeErrorHandler.apply(errorWrapper);
-                if (possibleThrowable != null) {
-                    invocationException = possibleThrowable;
-                }  
-            } catch (Exception propagatedException) {
-                invocationException = propagatedException;
-            }
+            invocationException = processErrorHandler(runtimeErrorHandler, 
+                    invocationInstance, 
+                    invocationException);
         }
         
-        // 7.) Optionally, if exception was not previously handled (perhaps re-thrown as something else), then pass to fallbackHandler
+        // 8.) Optionally, if exception was not previously handled (perhaps 
+        //     re-thrown as something else), then pass to fallbackHandler to 
+        //     marshall thrown exception into a valid returnValue.
         boolean fallbackInvoked = false;
         if (invocationException != null) {
             if (runtimeFallbackHandler != null) {
-                try {
-                    FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationInstance.returnType(), invocationException);
-                    Object responseObject = runtimeFallbackHandler.apply(fallbackWrapper);
-                    responseReference.set(responseObject);
-                    fallbackInvoked = true;
-                } catch (Exception e) {
-                    throw Throwables.propagate(e);
-                }
+                Object newFallbackObject = processFallbackHandler(runtimeFallbackHandler, 
+                        invocationInstance, 
+                        invocationException);
+                responseReference.set(newFallbackObject);
+                fallbackInvoked = true;
             } else {
                 throw Throwables.propagate(invocationException);
             }
         } 
         
-        // 8.) Optionally, we can marshall the response to some other object 
+        // 9.) Optionally, we can marshall the response from the ExecutionHandler 
+        //     into some other valid returnValue.
         if (!fallbackInvoked && runtimeResponseHandler != null) {
-            ResponseWrapper<?, ?> responseWrapper = ResponseWrapper.newInstance(responseReference.get(), invocationInstance.context(), invocationInstance.returnType());
-            Object responseObject = runtimeResponseHandler.apply(responseWrapper);
-            responseReference.set(responseObject);
+            Object newResponseObject = processResponseHandler(runtimeResponseHandler, 
+                    responseReference.get(), 
+                    invocationInstance);
+            responseReference.set(newResponseObject);
         } 
         
         return responseReference.get();
+    }
+
+    private Object processRequestHandler(final AbstractRequestHandler requestHandler, 
+            final AbstractExecutionHandler executionHandler,
+            Object executionContext,
+            Class genericExecutionType) {
+        
+        // 1.) Because execution of the RequestHandler is allowed to return a 
+        //     different type of Object than what potentially went in, we need 
+        //     to check if things ARE different and if so inject potential members.
+        Object possibleyNewObject = requestHandler.apply(executionContext);            
+        if (possibleyNewObject != null) {
+
+            // 1.2) Re-inject members if hashCodes are different.
+            if (executionContext.hashCode() != possibleyNewObject.hashCode()) {                            
+                injector.injectMembers(possibleyNewObject);
+                executionContext = possibleyNewObject;
+            } 
+        } else {
+
+            // 2.) A returned NULL executionContext from the RequestHandler 
+            //      is only allowed IF the ExecutionHandler has an input of 
+            //      type java.lang.Void.
+            if (!genericExecutionType.equals(Primitive.VOID.getRawClass())) {
+                throw new NullPointerException("RequestHandler (" 
+                        + requestHandler.getClass().getCanonicalName() + ") returned NULL while ExecutionHandler '" 
+                        + executionHandler.getClass().getCanonicalName() + "' expects an input of type '" 
+                        + genericExecutionType.getCanonicalName() + "'. This is only allowed if the input is of type '" 
+                        + Primitive.VOID.getRawClass() + "'");
+            }
+        }
+        
+        return executionContext;
+    }
+    
+    private void processExecutionHandler(final AbstractExecutionHandler executionHandler,
+            final AtomicReference<Object> responseReference,
+            final InvocationInstance invocationInstance) {
+        String retryCount = properties.get(ApiProcessorConstants.RETRY_COUNT, ApiProcessorConstants.RETRY_COUNT_DEFAULT);
+        String retryDelayStart = properties.get(ApiProcessorConstants.RETRY_DELAY_START, ApiProcessorConstants.RETRY_DELAY_START_DEFAULT);
+
+        RetryPolicy retryPolicy = new RetryPolicy()
+                .withDelay(Long.valueOf(retryDelayStart), TimeUnit.MILLISECONDS)
+                .withMaxRetries(Integer.valueOf(retryCount));
+
+        Failsafe.with(retryPolicy)
+                .onFailedAttempt(attempt -> LOGGER.log(Level.WARNING, RETRY_ATTEMPT_MESSAGE, attempt.getMessage()))
+                .onFailure(failure -> LOGGER.log(Level.SEVERE, RETRY_FAILED_MESSAGE, failure.getMessage()))
+                .run((ctx) -> { 
+                    Object [] loggerParams = {ctx.getExecutions() + 1, invocationInstance.toString()};
+                    LOGGER.log(Level.INFO, RETRY_RUN_MESSAGE, loggerParams);
+                    Object responseObject = executionHandler.apply(invocationInstance);
+                    responseReference.set(responseObject); 
+                });
+    }
+    
+    private Throwable processErrorHandler(final AbstractErrorHandler errorHandler,
+            final InvocationInstance invocationInstance,
+            Throwable invocationException) {
+        try {
+            ErrorWrapper<?> errorWrapper = ErrorWrapper.newInstance(invocationInstance, invocationException);
+            Throwable newThrowable = (Throwable) errorHandler.apply(errorWrapper);
+            return (newThrowable != null) ? newThrowable : invocationException;
+        } catch (Exception propagatedException) {
+            return propagatedException;
+        }
+    }
+    
+    private Object processFallbackHandler(final AbstractFallbackHandler fallbackHandler,
+            final InvocationInstance invocationInstance,
+            Throwable invocationException) {
+        try {
+            FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationInstance.returnType(), invocationException);
+            return fallbackHandler.apply(fallbackWrapper);
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+    
+    private Object processResponseHandler(final AbstractResponseHandler responseHandler, 
+            final Object responseReference,
+            final InvocationInstance invocationInstance) {
+        ResponseWrapper<?, ?> responseWrapper = ResponseWrapper.newInstance(responseReference, invocationInstance.context(), invocationInstance.returnType());
+        return responseHandler.apply(responseWrapper);
     }
     
     private void checkTypeConsistency(@Nullable AbstractRequestHandler runtimeRequestHandler,
