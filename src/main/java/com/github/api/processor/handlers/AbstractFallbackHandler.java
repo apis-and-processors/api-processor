@@ -24,6 +24,7 @@ import java.util.function.Function;
  *
  * @author github.
  * @param <T>
+ * @param <V>
  */
 public abstract class AbstractFallbackHandler<T> implements Function<FallbackWrapper, T> {
 

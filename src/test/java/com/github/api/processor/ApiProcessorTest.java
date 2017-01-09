@@ -57,23 +57,26 @@ public class ApiProcessorTest {
             return properties;
         }
     }
-    
-    class LocalErrorHandler extends AbstractErrorHandler<String> {
+        
+    class LocalRequestHandler extends AbstractRequestHandler<String, Void> {
         @Override
-        public Throwable apply(ErrorWrapper<String> object) {
-            
-            System.out.println("*************Hello local error: " + object.context());
-            return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        public Void apply(String object) {
+            if (object == null) {
+                System.out.println("it is null");
+            } else {
+            System.out.println("______________REQUESTHANDLER: " + object.getClass());
+            }
+            return null;
         }
     }
         
-    class LocalExecutionHandler extends AbstractExecutionHandler<SpecialBean, String> {
+    class LocalExecutionHandler extends AbstractExecutionHandler<Void, Integer> {
         @Override
-        public String apply(InvocationInstance<SpecialBean> object) {
+        public Integer apply(InvocationInstance<Void> object) {
             
             System.out.println("Context: " + object.context());
-            System.out.println("properties: " + object.context().props());
-            object.context().properties.put("fish", "bear");
+            //System.out.println("properties: " + object.context().props());
+            //object.context().properties.put("fish", "bear");
             
             ImmutableList<Args> argsList = object.combinedAnnotations(Args.class);
             for(int i = argsList.size() -1; i >= 0; i--) {
@@ -88,38 +91,43 @@ public class ApiProcessorTest {
             
             System.out.println("++++++++++param count: " + object.parameterCount());
             
-            //return "monkey";
-            throw new RuntimeException("Got a FAILURE");
+            return null;
+            //throw new RuntimeException("Got a FAILURE");
         }
     }
         
-    class LocalFallbackHandler extends AbstractFallbackHandler<String> {
+    class LocalResponseHandler extends AbstractResponseHandler<Integer, Integer> {
         @Override
-        public String apply(FallbackWrapper object) {
+        public Integer apply(ResponseWrapper<Integer, Integer> object) {
+            System.out.println("-------FOUND: " + object.value());
+            System.out.println("Expected returnType: " + object.type().getRawType());
+            return 1;
+        }
+    }
+        
+    
+    class LocalErrorHandler extends AbstractErrorHandler<Void> {
+        @Override
+        public Throwable apply(ErrorWrapper<Void> object) {
             
-            System.out.println("Exepected return-type: " + object.returnType);
-            System.out.println("Thrown exception: " + object.thrownException.getClass() + " message: " + object.thrownException.getMessage());
+            System.out.println("*************Hello local error: " + object.context());
+            return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+    }
+    
+        
+    class LocalFallbackHandler extends AbstractFallbackHandler<Integer> {
+        @Override
+        public Integer apply(FallbackWrapper object) {
+            
+            System.out.println("Exepected return-type: " + object.returnType());
+            System.out.println("Thrown exception: " + object.exception().getClass() + " message: " + object.exception().getMessage());
             System.out.println("Falling back to null");
-            return "fish";
+            return 123;
         }
     }
-            
-    class LocalRequestHandler extends AbstractRequestHandler<SpecialBean> {
-        @Override
-        public SpecialBean apply(SpecialBean object) {
-            System.out.println("______________REQUESTHANDLER: " + object.getClass());
-            return new SpecialBean();
-        }
-    }
-        
-    class LocalResponseHandler extends AbstractResponseHandler<SpecialBean, Object> {
-        @Override
-        public Object apply(ResponseWrapper<SpecialBean> object) {
-            System.out.println("@@@@@@@@@@@@ INSIDE @@@@@@@@@@@@@22");
-            return object.returnValue;
-        }
-    }
-                
+         
+    
     @Args( { "git" } )
     static interface Tigers {
         
@@ -140,7 +148,7 @@ public class ApiProcessorTest {
         @RequestHandler(LocalRequestHandler.class)
         @ErrorHandler(LocalErrorHandler.class)
         @FallbackHandler(LocalFallbackHandler.class)
-        String helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
+        int helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
     }
     
     @Api
@@ -160,11 +168,15 @@ public class ApiProcessorTest {
                 .properties(ApiProcessorConstants.CACHE_EXPIRE, "10000").build()
                 .get(HelloWorldApi.class);
         HelloWorld helloWorld = helloWorldApi.helloWorld();
+        /*
         String returnValue = helloWorld.helloWorld("fish", 123, null);
 
         System.out.println("-----> ReturnValue=" + returnValue);
         System.out.println("----->Ending...");
-        
+*/
+        int returnValue = helloWorld.helloWorld("fish", 123, null);
+        System.out.println(returnValue);
+
     }
 }
 

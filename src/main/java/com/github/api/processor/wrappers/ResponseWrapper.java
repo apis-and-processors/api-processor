@@ -24,32 +24,33 @@ import javax.annotation.Nullable;
  *
  * @author github.
  * @param <T>
+ * @param <V>
  */
-public class ResponseWrapper<T> {
+public class ResponseWrapper<T, V> {
     
-    public final Object returnValue;
-    public final T context;
-    public final TypeToken returnType;
+    private final T value;
+    private final V context;
+    private final TypeToken type;
     
-    public ResponseWrapper(@Nullable Object returnValue, @Nullable T context, TypeToken returnType) {
-        this.returnValue = returnValue;
+    public ResponseWrapper(@Nullable T value, @Nullable V context, TypeToken type) {
+        this.value = value;
         this.context = context;
-        this.returnType = returnType;
+        this.type = type;
     }
     
-    public Object returnValue() {
-        return returnValue;
+    public T value() {
+        return value;
     }
     
-    public T context() {
+    public V context() {
         return context;
     }
     
-    public TypeToken returnType() {
-        return returnType;
+    public TypeToken type() {
+        return type;
     }
     
-    public static <T> ResponseWrapper<T> newInstance(Object returnValue, T context, TypeToken returnType) {
-        return new ResponseWrapper(returnValue, context, returnType);
+    public static <T, V> ResponseWrapper<T, V> newInstance(T value, V context, TypeToken type) {
+        return new ResponseWrapper(value, context, type);
     }
 }

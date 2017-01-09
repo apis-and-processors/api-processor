@@ -39,6 +39,7 @@ public class ApiProcessorUtils {
 
     private static final String CLASS_ANNO_NULL = "class annotataion cannot be null";
     private static final String CLASS_ANNO_REQUIRED = "class must be an annotation";
+    private static final String POTENTIAL_PRIMITIVE_NULL = "potentialPrimitive class cannot be null";
 
     private static final Object [] EMPTY_OBJECT_ARRAY = new Object[1];
     private static final Constructor OBJECT_CONSTRUCTOR = Object.class.getDeclaredConstructors()[0];
@@ -118,4 +119,10 @@ public class ApiProcessorUtils {
         return new Class[0];
     }
 
+    public Class potentialPrimitiveToClass(Class potentialPrimitive) {
+        checkNotNull(potentialPrimitive, POTENTIAL_PRIMITIVE_NULL);
+        return potentialPrimitive.isPrimitive() 
+            ? Primitive.fromName(potentialPrimitive.toGenericString()).getRawClass()
+            : potentialPrimitive;
+    }
 }

@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        mavenLocal()
         jcenter()
         mavenCentral()
     }
@@ -24,6 +25,7 @@ apply from: "$rootDir/gradle/publishing.gradle"
 apply from: "$rootDir/gradle/release.gradle"
 
 repositories {
+    mavenLocal()
     jcenter()
     mavenCentral()
 }

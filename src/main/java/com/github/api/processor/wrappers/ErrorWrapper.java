@@ -26,8 +26,8 @@ import javax.annotation.Nullable;
  */
 public class ErrorWrapper<T> {
     
-    public final T context;
-    public final Throwable thrownException;
+    private final T context;
+    private final Throwable thrownException;
     
     public ErrorWrapper(@Nullable T context, Throwable thrownException) {
         this.context = context;

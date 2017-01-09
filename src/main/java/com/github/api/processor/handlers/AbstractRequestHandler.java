@@ -24,6 +24,6 @@ import java.util.function.Function;
  * @author github.
  * @param <T>
  */
-public abstract class AbstractRequestHandler<T> implements Function<T, T> {
+public abstract class AbstractRequestHandler<T, V> implements Function<T, V> {
 
 }
