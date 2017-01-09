@@ -29,10 +29,13 @@ import com.github.api.processor.utils.Primitive;
 import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
 import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import java.lang.reflect.Method;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -48,8 +51,11 @@ import net.jodah.failsafe.RetryPolicy;
 @Singleton
 public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     
+    private static final Cache<String, Object> RUNTIME_METADATA = CacheBuilder.newBuilder().build();
+    
     private static final Logger LOGGER = Logger.getLogger(RuntimeInvocationHandler.class.getName());
 
+    private static final String GENERIC_TYPE_CACHE_MESSAGE = "Caching new generic-types for: {0}";
     private static final String DELEGATE_MESSAGE = "Delegate method returning instance of {0}";
     private static final String RETRY_ATTEMPT_MESSAGE = "Invocation attempt failed due to: {0}";
     private static final String RETRY_FAILED_MESSAGE = "Invocation failed due to: {0}";
@@ -118,22 +124,24 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
         // 4.) Check that Types passed between handlers are sane and not mismatched. 
         //     Throws RuntimeException if something does not match correctly.
-        checkTypeConsistency(runtimeRequestHandler,
-                runtimeExecutionHandler,
-                runtimeErrorHandler,
-                runtimeFallbackHandler,
-                runtimeResponseHandler,
-                invocationInstance.returnType().getRawType());
-                
+        if (previouslyCheckedTypeConsistency(method.getDeclaringClass().getName() + "@" + method.getName()) == null) {
+            checkTypeConsistency(runtimeRequestHandler,
+                    runtimeExecutionHandler,
+                    runtimeErrorHandler,
+                    runtimeFallbackHandler,
+                    runtimeResponseHandler,
+                    invocationInstance.returnType().getRawType());
+        } 
+                        
         // 5.) Two things are happening below: we are optionally executing a RequestHandler and 
         //     generating, not optional, an executionContext. The RequestHandler takes in an 
         //     executionContext which is why we have to build/generate it as part of its 
         //     invocation. If we don't execute a RequestHandler we are still required to 
         //     build/generate an executionContext.
         Object executionContext;
-        Class genericExecutionType = processorUtils.getGenericClassTypes(runtimeExecutionHandler.getClass())[0];
+        Class genericExecutionType = genericTypes(runtimeExecutionHandler.getClass())[0];
         if (runtimeRequestHandler != null) {
-            Class[] requestTypes = processorUtils.getGenericClassTypes(runtimeRequestHandler.getClass()); 
+            Class[] requestTypes = genericTypes(runtimeRequestHandler.getClass()); 
             executionContext = processRequestHandler(runtimeRequestHandler,
                     runtimeExecutionHandler,
                     getInstance(requestTypes[0]),
@@ -204,7 +212,6 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             // 1.2) Re-inject members if hashCodes are different.
             if (executionContext.hashCode() != possibleyNewObject.hashCode()) {                            
                 injector.injectMembers(possibleyNewObject);
-                executionContext = possibleyNewObject;
             } 
         } else {
 
@@ -218,9 +225,9 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                         + genericExecutionType.getCanonicalName() + "'. This is only allowed if the input is of type '" 
                         + Primitive.VOID.getRawClass() + "'");
             }
-        }
+        } 
         
-        return executionContext;
+        return possibleyNewObject;
     }
     
     private void processExecutionHandler(final AbstractExecutionHandler executionHandler,
@@ -283,18 +290,18 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
         // The only thing guaranteed to be non-null is the ExecutionHandler 
         // which is why we init it here.
-        Class[] genericExecutionTypes = processorUtils.getGenericClassTypes(runtimeExecutionHandler.getClass());
+        Class[] genericExecutionTypes = genericTypes(runtimeExecutionHandler.getClass());
         Class comparisonSafeReturnType = processorUtils.potentialPrimitiveToClass(expectedReturnType);
         
         
         // 1.) Check RequestHandler, if applicable, for initial Type as its output  
         //     must match the input of ExecutionHandler.
         if (runtimeRequestHandler != null) {
-            Class genericRequestOutputType = processorUtils.getGenericClassTypes(runtimeRequestHandler.getClass())[1];
-            if (!genericRequestOutputType.equals(genericExecutionTypes[0])) {
+            Class[] genericRequestTypes = genericTypes(runtimeRequestHandler.getClass());
+            if (!genericRequestTypes[1].equals(genericExecutionTypes[0])) {
                 throw new TypeMismatchException("RequestHandler (" 
                         + runtimeRequestHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericRequestOutputType.getCanonicalName() + "' while ExecutionHandler (" 
+                        + genericRequestTypes[1].getCanonicalName() + "' while ExecutionHandler (" 
                         + runtimeExecutionHandler.getClass().getCanonicalName() + ") expects an input of type '" 
                         + genericExecutionTypes[0].getCanonicalName() + "'. These MUST be the same!!!");
             }
@@ -304,13 +311,13 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         // 2.) Check the ErrorHandler input, if applicable, as it must match the 
         //     the input, that is the context, to the ExecutionHandler.
         if (runtimeErrorHandler != null) {
-            Class genericErrorInputType = processorUtils.getGenericClassTypes(runtimeErrorHandler.getClass())[0];
-            if (!genericErrorInputType.equals(genericExecutionTypes[0])) {
+            Class[] genericErrorTypes = genericTypes(runtimeErrorHandler.getClass());
+            if (!genericErrorTypes[0].equals(genericExecutionTypes[0])) {
                 throw new TypeMismatchException("ExecutionHandler (" 
                         + runtimeExecutionHandler.getClass().getCanonicalName() + ") has an input of type '" 
                         + genericExecutionTypes[0].getCanonicalName() + "' while ErrorHandler (" 
                         + runtimeErrorHandler.getClass().getCanonicalName() + ") expects an input of type '" 
-                        + genericErrorInputType.getCanonicalName() + "'. These MUST be the same!!!");
+                        + genericErrorTypes[0].getCanonicalName() + "'. These MUST be the same!!!");
             }
         }
 
@@ -318,11 +325,11 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         // 3.) Check the FallbackHandler output, if applicable, as it must match 
         //     the expected returnType.
         if (runtimeFallbackHandler != null) {
-            Class genericFallbackOutputType = processorUtils.getGenericClassTypes(runtimeFallbackHandler.getClass())[0];
-            if (!genericFallbackOutputType.equals(comparisonSafeReturnType)) {
+            Class[] genericFallbackTypes = genericTypes(runtimeFallbackHandler.getClass());
+            if (!genericFallbackTypes[0].equals(comparisonSafeReturnType)) {
                 throw new TypeMismatchException("FallbackHandler (" 
                         + runtimeFallbackHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericFallbackOutputType.getCanonicalName() + "' while expected returnType is of type '" 
+                        + genericFallbackTypes[0].getCanonicalName() + "' while expected returnType is of type '" 
                         + comparisonSafeReturnType.getCanonicalName() + "'. These MUST be the same!!!");
             } 
         }
@@ -334,7 +341,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         //     Also check the ResponseHandler output as it must match the 
         //     expected returnType. 
         if (runtimeResponseHandler != null) {
-            Class[] genericResponseTypes = processorUtils.getGenericClassTypes(runtimeResponseHandler.getClass());
+            Class[] genericResponseTypes = genericTypes(runtimeResponseHandler.getClass());
             if (!genericResponseTypes[0].equals(genericExecutionTypes[1])) {
                 throw new TypeMismatchException("ExecutionHandler (" 
                         + runtimeExecutionHandler.getClass().getCanonicalName() + ") has an output of type '" 
@@ -358,6 +365,36 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                         + comparisonSafeReturnType.getCanonicalName() + "'. These MUST be the same!!!");
             }
         }
+    }
+    
+    /**
+     * Because checking for generic type consistency between handlers is 
+     * an expensive operation we ONLY want to do so once and cache all 
+     * types found for a given class.
+     * 
+     * @param methodClassKey key used to query if we've already done a type-check.
+     * @return non-null Boolean if we've previously checked otherwise null.
+     */
+    private Boolean previouslyCheckedTypeConsistency(String methodClassKey) {
+        return (Boolean) RUNTIME_METADATA.asMap().putIfAbsent(methodClassKey, Boolean.TRUE);
+    }
+    
+    /**
+     * Get the generic types for a given Class.
+     * 
+     * @param genericTypeClass the class with potentially generic types.
+     * @return array listing generic types in order.
+     */
+    private Class[] genericTypes(Class genericTypeClass) {        
+        try {
+            //RUNTIME_METADATA.g
+            return (Class[]) RUNTIME_METADATA.get(genericTypeClass.getName(), () -> {
+                LOGGER.log(Level.INFO, GENERIC_TYPE_CACHE_MESSAGE, genericTypeClass.getName());
+                return processorUtils.getGenericClassTypes(genericTypeClass);
+            });
+        } catch (ExecutionException ex) {
+            throw Throwables.propagate(ex);
+        } 
     }
     
     private Object getInstance(Class clazz) {

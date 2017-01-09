@@ -175,6 +175,7 @@ public class ApiProcessorTest {
         System.out.println("----->Ending...");
 */
         int returnValue = helloWorld.helloWorld("fish", 123, null);
+        returnValue = helloWorld.helloWorld("bear", 23567, null);
         System.out.println(returnValue);
 
     }
