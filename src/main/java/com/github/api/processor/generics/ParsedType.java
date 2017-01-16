@@ -125,7 +125,7 @@ public class ParsedType implements Comparable<ParsedType> {
         return true;
     }
     
-    private void print(ParsedType genericTypes, StringBuilder builder) {
+    private static void print(ParsedType genericTypes, StringBuilder builder) {
         builder.append(genericTypes.mainType);
         if (genericTypes.subTypes().size() > 0) {
             builder.append(Constants.GREATER_THAN);
