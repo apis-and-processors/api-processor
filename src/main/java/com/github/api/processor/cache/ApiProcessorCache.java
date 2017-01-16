@@ -159,12 +159,13 @@ public class ApiProcessorCache {
      * @return newly created MethodInstance.
      */
     private MethodInstance methodInstanceFrom(Method method) {
-        String key = (METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName()).intern(); 
+        final String methodHashCode = Integer.toString(method.toGenericString().intern().hashCode());
+        String key = (METHOD_INSTANCE_PREFIX + method.getDeclaringClass().getName() + "@" + method.getName() + "#" + methodHashCode).intern(); 
         try {
             return (MethodInstance) cache.get(key, () -> {
                 LOGGER.log(Level.CONFIG, METHOD_INSTANCE_CACHE_MESSAGE, key);
                 Invokable inv = invokableFrom(method.getDeclaringClass(), method);
-                return new MethodInstance(inv.getName(), inv.getAnnotations(), inv.getParameters(), inv.getReturnType());
+                return new MethodInstance(inv.getName(), methodHashCode, inv.getAnnotations(), inv.getParameters(), inv.getReturnType());
             });
         } catch (SecurityException | IllegalArgumentException | ExecutionException ex) {
             throw Throwables.propagate(ex);

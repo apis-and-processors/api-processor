@@ -6,26 +6,23 @@
 package com.github.api.processor.exceptions;
 
 /**
- * Thrown when generic types of 2 classes are found to be different 
- * but were expected to be the same.
  * 
  * @author cdancy
  */
 public class TypeMismatchException extends RuntimeException {
     
-    public TypeMismatchException() {
-        super();
+    public final String source;
+    public final String target;
+    
+    public TypeMismatchException(String message, String source, String target) {
+        super(message);
+        this.source = source;
+        this.target = target;
     }
     
-    public TypeMismatchException(String s) {
-        super(s);
-    }
-    
-    public TypeMismatchException(String s, Throwable throwable) {
-        super(s, throwable);
-    }
-    
-    public TypeMismatchException(Throwable throwable) {
-        super(throwable);
+    public TypeMismatchException(String message, String source, String target, Throwable throwable) {
+        super(message, throwable);
+        this.source = source;
+        this.target = target;
     }
 }

@@ -3,13 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.github.api.processor.utils;
+package com.github.api.processor.generics;
 
 /**
  *
  * @author dancc
  */
-public enum Primitive {
+public enum PrimitiveTypes {
     
     BYTE("byte", Byte.class),
     CHAR("char", Character.class),
@@ -19,12 +19,13 @@ public enum Primitive {
     FLOAT("float", Float.class),
     DOUBLE("double", Double.class),
     BOOLEAN("boolean", Boolean.class),
-    VOID("void", Void.class);
+    VOID("void", Void.class),
+    NULL("null", Null.class);
 
     private final String name;
     private final Class rawClass;
     
-    private Primitive(String name, Class rawClass) {
+    private PrimitiveTypes(String name, Class rawClass) {
         this.name = name;
         this.rawClass = rawClass;
     }
@@ -37,8 +38,14 @@ public enum Primitive {
         return this.rawClass;
     }
 
-    public static Primitive fromName(String name) {
-        return name != null ? Primitive.valueOf(name.toUpperCase().intern()) : null;
+    public static PrimitiveTypes fromName(Object name) {
+        return name == null ? fromName("null") : fromName(name.toString());
+    }
+        
+    public static PrimitiveTypes fromName(String name) {
+        return (name == null || name.trim().equalsIgnoreCase("null")) 
+                ? PrimitiveTypes.NULL 
+                : PrimitiveTypes.valueOf(name.toUpperCase().intern());
     }
 
 }

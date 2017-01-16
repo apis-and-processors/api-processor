@@ -17,17 +17,25 @@
 
 package com.github.api.processor.utils;
 
+import com.github.api.processor.generics.PrimitiveTypes;
+import com.github.api.processor.generics.ParsedType;
+import com.github.api.processor.handlers.AbstractRequestHandler;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Singleton;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -43,7 +51,6 @@ public class ApiProcessorUtils {
 
     private static final Object [] EMPTY_OBJECT_ARRAY = new Object[1];
     private static final Constructor OBJECT_CONSTRUCTOR = Object.class.getDeclaredConstructors()[0];
-    
     
     /**
      * Find all classes on the path annotated with given annotation.
@@ -78,7 +85,12 @@ public class ApiProcessorUtils {
         try {
             Constructor noArgConstructor = beanClass.getDeclaredConstructors()[0];
             noArgConstructor.setAccessible(true);
-            return beanClass.cast(noArgConstructor.newInstance(EMPTY_OBJECT_ARRAY)); 
+            
+            if (Number.class.isAssignableFrom(beanClass)) {
+                return beanClass.cast(noArgConstructor.newInstance(0));     
+            } else {
+                return beanClass.cast(noArgConstructor.newInstance(EMPTY_OBJECT_ARRAY));     
+            }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
             
             // second attempt at creating generic object from class
@@ -89,30 +101,25 @@ public class ApiProcessorUtils {
             }
         } 
     }   
-    
-    public Class[] getGenericClassTypes(Class clazz) {
-        TypeToken.TypeSet genericType = TypeToken.of(clazz).getTypes().classes();
+        
+    public Class[] getGenericTypesAsClasses(Class clazz) {
+        TypeToken.TypeSet genericType = TypeToken.of(clazz).getTypes();
         Iterator<TypeToken> iter = genericType.iterator();
         String clazzName = clazz.getSuperclass().getCanonicalName();
         while(iter.hasNext()) {
-            TypeToken typeToken = iter.next();
-            String typeTokenClassName = typeToken.toString();
+            String typeTokenClassName = iter.next().toString();
             if (typeTokenClassName.startsWith(clazzName)) {
-               String[] typeStrings = typeTokenClassName
-                       .substring(clazzName.length(), typeTokenClassName.length())
-                       .replaceFirst("<", "")
-                       .replaceFirst(">", "")
-                       .replaceAll(" ", "")
-                       .split(",");
-               Class[] typeClasses = new Class[typeStrings.length];
-               for (int i = 0; i < typeClasses.length; i++) {
-                   try {
-                       typeClasses[i] = Class.forName(typeStrings[i]);
-                   } catch (ClassNotFoundException ex) {
-                       throw Throwables.propagate(ex);
-                   }
-               }
-               return typeClasses;
+                typeTokenClassName = typeTokenClassName.substring(clazzName.length(), typeTokenClassName.length());
+                String[] classStrings = classStringsFromTypeStrings(typeTokenClassName);
+                Class[] typeClasses = new Class[classStrings.length];
+                for (int i = 0; i < typeClasses.length; i++) {
+                    try {
+                        typeClasses[i] = Class.forName(classStrings[i]);
+                    } catch (ClassNotFoundException ex) {
+                        throw Throwables.propagate(ex);
+                    }
+                }
+                return typeClasses;
             }
         }
         
@@ -122,7 +129,72 @@ public class ApiProcessorUtils {
     public Class potentialPrimitiveToClass(Class potentialPrimitive) {
         checkNotNull(potentialPrimitive, POTENTIAL_PRIMITIVE_NULL);
         return potentialPrimitive.isPrimitive() 
-            ? Primitive.fromName(potentialPrimitive.toGenericString()).getRawClass()
+            ? PrimitiveTypes.fromName(potentialPrimitive.toGenericString()).getRawClass()
             : potentialPrimitive;
+    }
+    
+    /**
+     * Converts a String that looks like:
+     * 
+     *     <java.util.ArrayList<java.lang.String>, java.util.HashMap<java.lang.String, java.lang.String>>
+     * 
+     * to a list that looks like:
+     * 
+     *     { 'java.util.ArrayList', 'java.util.HashMap' }
+     * 
+     * @param typeString string containing possible types.
+     * @return string array with all types removed.
+     */
+    private String[] classStringsFromTypeStrings(String typeString) {
+        int index = typeString.lastIndexOf("<");
+        if (index != -1) {
+            String firstPass = typeString.replaceFirst("<", "").replaceAll(" ", "");
+            String[] classStrings = replaceLastString(firstPass, ">", "").split(",");
+            for(int i = 0; i < classStrings.length; i++) {
+                classStrings[i] = removeTypeStringFromClassString(classStrings[i]);
+            }
+            return classStrings;
+        } else {
+            String [] possibleTypeStrings = { typeString };
+            return possibleTypeStrings;
+        }
+    }
+    
+    /**
+     * Converts a String that looks like:
+     *     
+     *     'java.util.ArrayList<String, List<String>>' 
+     * 
+     * to one that looks like:
+     * 
+     *     'java.util.ArrayList'.
+     * 
+     * If no types are found than original String is returned.
+     * 
+     * @param classString string containing potential types.
+     * @return the class portion of the type-string or original string
+     *         if none could be found.
+     */
+    public String removeTypeStringFromClassString(String classString) {
+        int index = classString.indexOf("<");
+        return (index != -1) 
+                ? classString.substring(0, index)
+                : classString;
+    }
+    
+    /**
+     * Replace the last occurrence of a String within a given String
+     * 
+     * @param source the source string we will work on.
+     * @param substring string we will replace the last occurrence of.
+     * @param replacement string we will use to replace last occurrence of 'substring'.
+     * @return new String with all replacements done or original String if substring was not found.
+     */
+    public String replaceLastString(String source, String substring, String replacement) {
+        int index = source.lastIndexOf(substring);
+        return (index == -1) 
+                ? source 
+                : source.substring(0, index) 
+                + replacement + source.substring(index + substring.length());
     }
 }

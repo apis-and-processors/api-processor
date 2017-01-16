@@ -32,17 +32,19 @@ import javax.annotation.Nullable;
 /**
  *
  * @author github.
+ * @param <V>
  */
 public class InvocationInstance<V> {
     
-    private final AtomicReference<V> context = new AtomicReference<V>(null);
+    private final AtomicReference<V> context = new AtomicReference<>(null);
     private final Class clazz;
     private final ImmutableMap<String, ImmutableList<Annotation>> classAnnotations;
     private final String method;
     private final ImmutableMap<String, Annotation> methodAnnotations;
     private final ImmutableList<ParameterInstance<?>> parameterInstanceCache;
     private final Object [] arguments;
-    private final TypeToken returnType;
+    private final String signature;
+    private final TypeToken typeToken;
     
     @Nullable
     private final AbstractExecutionHandler executionHandler;
@@ -65,7 +67,8 @@ public class InvocationInstance<V> {
             ImmutableMap<String, Annotation> methodAnnotations, 
             ImmutableList<ParameterInstance<?>> parameterInstanceCache,
             Object [] arguments,
-            TypeToken returnType,
+            String signature,
+            TypeToken typeToken,
             AbstractExecutionHandler executionHandler,
             AbstractErrorHandler errorHandler,
             AbstractFallbackHandler fallbackHandler,
@@ -77,7 +80,8 @@ public class InvocationInstance<V> {
         this.methodAnnotations = methodAnnotations;
         this.parameterInstanceCache = parameterInstanceCache;
         this.arguments = arguments;
-        this.returnType = returnType;
+        this.signature = signature;
+        this.typeToken = typeToken;
         this.executionHandler = executionHandler;
         this.errorHandler = errorHandler;
         this.fallbackHandler = fallbackHandler;
@@ -163,19 +167,22 @@ public class InvocationInstance<V> {
         return arguments.length;
     }
     
-    public TypeToken returnType() {
-        return returnType;
+    public String signature() {
+        return signature;
+    }
+    
+    public TypeToken typeToken() {
+        return typeToken;
     }
     
     @Override
     public String toString() {
-        return (this.clazz().getName() + "@" + this.method()).intern();
+        return (this.clazz().getName() + "@" + this.method() + "#" + this.signature()).intern();
     }
     
     /**
      * Create new InvocationInstance from passed parameters.
      * 
-     * @param context optional context.
      * @param classInstance the classInstance used to query for annotations.
      * @param methodInstance the methodInstance used to query for annotations.
      * @param args the parameter arguments for this invocation.
@@ -201,7 +208,8 @@ public class InvocationInstance<V> {
                 methodInstance.annotations(), 
                 methodInstance.parameterInstanceCache(),
                 args,
-                methodInstance.returnType(), 
+                methodInstance.signature(),
+                methodInstance.typeToken(), 
                 executionHandler, 
                 errorHandler, 
                 fallbackHandler, 

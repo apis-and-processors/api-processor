@@ -43,7 +43,8 @@ public class MethodInstance implements ProcessorHandles {
     private final String method;
     private final ImmutableMap<String, Annotation> annotations;
     private final ImmutableList<ParameterInstance<?>> parameterInstanceCache;
-    private final TypeToken returnType;
+    private final TypeToken typeToken;
+    private final String signature;
     
     private final Class<? extends AbstractExecutionHandler> executionHandler;
     private final Class<? extends AbstractErrorHandler> errorHandler;
@@ -55,12 +56,14 @@ public class MethodInstance implements ProcessorHandles {
      * Create MethodInstance from passed args.
      * 
      * @param method name of method this instance is based on.
+     * @param signature hashCode based on signature of origin method
      * @param annotations annotations set on method.
      * @param parameters parameters set on method.
-     * @param returnType the ReturnType that this method is based on.
+     * @param typeToken the type for this method.
      */
-    public MethodInstance(String method, Annotation[] annotations, ImmutableList<Parameter> parameters, TypeToken returnType) {
+    public MethodInstance(String method, String signature, Annotation[] annotations, ImmutableList<Parameter> parameters, TypeToken typeToken) {
         this.method = method;
+        this.signature = signature;
         
         ImmutableMap.Builder<String, Annotation> mapBuilder = ImmutableMap.builder();
         for (Annotation methodAnnotation : annotations) {
@@ -115,11 +118,15 @@ public class MethodInstance implements ProcessorHandles {
         });
         this.parameterInstanceCache = listBuilder.build();
         
-        this.returnType = returnType;
+        this.typeToken = typeToken;
     }
     
     public String method() {
         return method;
+    }
+    
+    public String signature() {
+        return signature;
     }
     
     public ImmutableMap<String, Annotation> annotations() {
@@ -130,8 +137,8 @@ public class MethodInstance implements ProcessorHandles {
         return parameterInstanceCache;
     }
     
-    public TypeToken returnType() {
-        return returnType;
+    public TypeToken typeToken() {
+        return typeToken;
     }
 
     @Override

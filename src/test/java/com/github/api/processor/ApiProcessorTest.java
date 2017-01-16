@@ -37,9 +37,7 @@ import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.google.common.collect.ImmutableList;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.testng.annotations.Test;
 import org.testng.collections.Maps;
@@ -58,21 +56,21 @@ public class ApiProcessorTest {
         }
     }
         
-    class LocalRequestHandler extends AbstractRequestHandler<String, Void> {
+    class LocalRequestHandler extends AbstractRequestHandler<Integer, Object> {
         @Override
-        public Void apply(String object) {
+        public Object apply(Integer object) {
             if (object == null) {
                 System.out.println("it is null");
             } else {
-            System.out.println("______________REQUESTHANDLER: " + object.getClass());
+                System.out.println("______________REQUESTHANDLER: " + object.getClass());
             }
-            return null;
+            return 123;
         }
     }
         
-    class LocalExecutionHandler extends AbstractExecutionHandler<Void, Integer> {
+    class LocalExecutionHandler extends AbstractExecutionHandler<Integer, Integer> {
         @Override
-        public Integer apply(InvocationInstance<Void> object) {
+        public Integer apply(InvocationInstance<Integer> object) {
             
             System.out.println("Context: " + object.context());
             //System.out.println("properties: " + object.context().props());
@@ -91,39 +89,42 @@ public class ApiProcessorTest {
             
             System.out.println("++++++++++param count: " + object.parameterCount());
             
-            return null;
-            //throw new RuntimeException("Got a FAILURE");
+            //return 123;
+            throw new RuntimeException("Got a FAILURE");
         }
     }
         
-    class LocalResponseHandler extends AbstractResponseHandler<Integer, Integer> {
+    class LocalResponseHandler extends AbstractResponseHandler<Integer, Object> {
         @Override
-        public Integer apply(ResponseWrapper<Integer, Integer> object) {
+        public Object apply(ResponseWrapper<Integer, Object> object) {
+            
+            
             System.out.println("-------FOUND: " + object.value());
-            System.out.println("Expected returnType: " + object.type().getRawType());
-            return 1;
+            System.out.println("Expected returnType: " + object.type());
+            return object.value();
         }
     }
         
     
-    class LocalErrorHandler extends AbstractErrorHandler<Void> {
+    class LocalErrorHandler extends AbstractErrorHandler<Integer> {
         @Override
-        public Throwable apply(ErrorWrapper<Void> object) {
+        public Throwable apply(ErrorWrapper<Integer> object) {
             
             System.out.println("*************Hello local error: " + object.context());
-            return new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            System.out.println("*************Hello local error: " + object.thrownException().getMessage());
+            return new UnsupportedOperationException("Not supported yet: " + object.context()); //To change body of generated methods, choose Tools | Templates.
         }
     }
     
         
-    class LocalFallbackHandler extends AbstractFallbackHandler<Integer> {
+    class LocalFallbackHandler extends AbstractFallbackHandler<Object> {
         @Override
-        public Integer apply(FallbackWrapper object) {
+        public Object apply(FallbackWrapper object) {
             
             System.out.println("Exepected return-type: " + object.returnType());
             System.out.println("Thrown exception: " + object.exception().getClass() + " message: " + object.exception().getMessage());
             System.out.println("Falling back to null");
-            return 123;
+            return 998877;
         }
     }
          
@@ -148,7 +149,16 @@ public class ApiProcessorTest {
         @RequestHandler(LocalRequestHandler.class)
         @ErrorHandler(LocalErrorHandler.class)
         @FallbackHandler(LocalFallbackHandler.class)
-        int helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
+        Object helloWorld(@Nullable @ArgsValue("message") String message, int number, String monkey);
+        
+        @Args( { "{message}" } )
+        //@ResponseHandler(LocalResponseHandler.class)
+        @ExecutionHandler(LocalExecutionHandler.class)
+        //@RequestHandler(LocalRequestHandler.class)
+        @ErrorHandler(LocalErrorHandler.class)
+        @FallbackHandler(LocalFallbackHandler.class)
+        int helloWorld(@Nullable @ArgsValue("message") String message, String monkey, int number);
+
     }
     
     @Api
@@ -174,10 +184,12 @@ public class ApiProcessorTest {
         System.out.println("-----> ReturnValue=" + returnValue);
         System.out.println("----->Ending...");
 */
-        int returnValue = helloWorld.helloWorld("fish", 123, null);
-        returnValue = helloWorld.helloWorld("bear", 23567, null);
-        System.out.println(returnValue);
+        //helloWorld.helloWorld("fish", 123, null);
+        //helloWorld.helloWorld("fish", 123, null);
 
+        System.out.println(">>>>>> " + helloWorld.helloWorld("bear", null, 123));
+        //System.out.println("output=" + helloWorld.helloWorld("bear", null, 123));
+        //System.out.println("output=" + helloWorld.helloWorld("tiger", null, 123));
     }
 }
 

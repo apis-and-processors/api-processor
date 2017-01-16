@@ -23,18 +23,27 @@ import com.github.api.processor.annotations.Delegate;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.cache.ApiProcessorCache;
+import com.github.api.processor.exceptions.CheckTimeTypeMismatchException;
+import com.github.api.processor.exceptions.NullNotAllowedException;
+import com.github.api.processor.exceptions.ProcessTimeTypeMismatchException;
 import com.github.api.processor.exceptions.TypeMismatchException;
+import com.github.api.processor.generics.ParsedType;
+import com.github.api.processor.generics.GenericsUtils;
 import com.github.api.processor.utils.ApiProcessorUtils;
-import com.github.api.processor.utils.Primitive;
+import com.github.api.processor.generics.PrimitiveTypes;
+import com.github.api.processor.utils.Constants;
+import com.github.api.processor.utils.Pair;
 import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,7 +69,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private static final String RETRY_ATTEMPT_MESSAGE = "Invocation attempt failed due to: {0}";
     private static final String RETRY_FAILED_MESSAGE = "Invocation failed due to: {0}";
     private static final String RETRY_RUN_MESSAGE = "Invocation attempt {0} on {1}";
-    
+
     @Inject
     Injector injector;
         
@@ -100,7 +109,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         
         // 2.) If method is a Delegate then return an instance of its Api/Interface
         if (invocationInstance.methodAnnotation(Delegate.class) != null) {
-            Class proxyType = invocationInstance.returnType().getRawType();
+            Class proxyType = invocationInstance.typeToken().getRawType();
             LOGGER.log(Level.INFO, DELEGATE_MESSAGE, proxyType);
             return processorCache.proxyFrom(proxyType, this);
         }
@@ -122,23 +131,38 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                 ? invocationInstance.responseHandler() 
                 : abstractResponseHandler;
         
-        // 4.) Check that Types passed between handlers are sane and not mismatched. 
+        
+        Class returnType = processorUtils.potentialPrimitiveToClass(invocationInstance.typeToken().getRawType());
+        boolean isPrimitive = invocationInstance.typeToken().getRawType().isPrimitive();
+        
+        // 4.) Check that Types passed between handlers are sane and not mismatched.
         //     Throws RuntimeException if something does not match correctly.
-        if (previouslyCheckedTypeConsistency(method.getDeclaringClass().getName() + "@" + method.getName()) == null) {
-            checkTypeConsistency(runtimeRequestHandler,
-                    runtimeExecutionHandler,
-                    runtimeErrorHandler,
-                    runtimeFallbackHandler,
-                    runtimeResponseHandler,
-                    invocationInstance.returnType().getRawType());
-        } 
-                        
+        final Map<Integer, Pair<ParsedType, ParsedType>> requiredChecks;
+        try {
+            requiredChecks = (Map<Integer, Pair<ParsedType, ParsedType>>) RUNTIME_METADATA.get(invocationInstance.signature(), () -> {
+                return checkTypeConsistency(runtimeRequestHandler,
+                        runtimeExecutionHandler,
+                        runtimeErrorHandler,
+                        runtimeFallbackHandler,
+                        runtimeResponseHandler,
+                        returnType,
+                        isPrimitive);
+            });
+        } catch (ExecutionException ex) {
+            throw Throwables.propagate(ex);
+        }
+        
+        for(Map.Entry<Integer, Pair<ParsedType, ParsedType>> fish : requiredChecks.entrySet()) {
+            System.out.println("~~~~~~FOUND: key=" + fish.getKey() + ", value=" + fish.getValue());
+        }
+        
+          
         // 5.) Two things are happening below: we are optionally executing a RequestHandler and 
         //     generating, not optional, an executionContext. The RequestHandler takes in an 
         //     executionContext which is why we have to build/generate it as part of its 
         //     invocation. If we don't execute a RequestHandler we are still required to 
         //     build/generate an executionContext.
-        Object executionContext;
+        final Object executionContext;
         Class genericExecutionType = genericTypes(runtimeExecutionHandler.getClass())[0];
         if (runtimeRequestHandler != null) {
             Class[] requestTypes = genericTypes(runtimeRequestHandler.getClass()); 
@@ -146,10 +170,39 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                     runtimeExecutionHandler,
                     getInstance(requestTypes[0]),
                     genericExecutionType);
+            
+            // if necessary check the output of RequestHandler before passing to ExecutionHandler
+            Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.REQUEST_HANDLER_TO_EXECUTION_HANDLER_CHECK);
+            if (parsedPair != null) {
+                try {
+                    GenericsUtils.parseType(executionContext).compare(parsedPair.right());
+                } catch (TypeMismatchException tme) {
+                    throw new ProcessTimeTypeMismatchException("RequestHandler (" 
+                            + runtimeRequestHandler.getClass().getCanonicalName() + ") " 
+                            + "outputs do not match ExecutionHandler (" 
+                            + runtimeExecutionHandler.getClass().getCanonicalName() + ") inputs.", tme);
+                }
+            }
         } else {
             executionContext = getInstance(genericExecutionType);
         }
-       
+        
+        // 5.1 Now that the context has been set the only other handler 
+        //     which will accept it is the ErrorHandler. Lets check, if 
+        //     necessary, that type-consistency is sane.
+        if(runtimeErrorHandler != null) {
+            Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.EXECUTION_HANDLER_TO_ERROR_HANDLER_CHECK);
+            if (parsedPair != null) {
+                try {
+                    GenericsUtils.parseType(executionContext).compare(parsedPair.right());
+                } catch (TypeMismatchException tme) {
+                    throw new ProcessTimeTypeMismatchException("The 'execution context' " 
+                            + "does not match the ErrorHandler (" 
+                            + runtimeErrorHandler.getClass().getCanonicalName() + ") inputs.", tme);
+                }
+            }
+        }
+            
         // 6.) Pass InvocationInstance to ExecutionHandler for runtime execution.
         final AtomicReference<Object> responseReference = new AtomicReference();
         Throwable invocationException = null;
@@ -161,6 +214,71 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         } catch (Exception e) {
             invocationException = e;
         }
+        
+        // 6.1) Because we are successful only 2 paths exist:
+        //      
+        //          1.) Pass off to ResponseHandler (if applicable)
+        //
+        //          2.) Return from method invocation
+        //
+        //      We need to ensure type-consistency for either of 
+        //      these scenarios is sane.
+        if (invocationException == null) {
+            if (runtimeResponseHandler != null) {
+
+                // if necessary check the output of ExecutionHandler before passing to ResponseHandler
+                Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.EXECUTION_HANDLER_TO_RESPONSE_HANDLER_CHECK);
+                if (parsedPair != null) {
+                    try {
+                        GenericsUtils.parseType(responseReference.get()).compare(parsedPair.right());
+                    } catch (TypeMismatchException tme) {
+                        throw new ProcessTimeTypeMismatchException("ExecutionHandler (" 
+                                + runtimeExecutionHandler.getClass().getCanonicalName() + ") " 
+                                + "outputs do not match ResponseHandler (" 
+                                + runtimeResponseHandler.getClass().getCanonicalName() + ") inputs.", tme);
+                    }
+                }
+            } else {
+                
+                System.out.println("::::::: NO RESPONSE HANDLER");
+                
+                // if necessary check the output of ExecutionHandler before returning from method invocation
+                Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.EXECUTION_HANDLER_TO_RETURN_VALUE_CHECK);
+                if (parsedPair != null) {
+                    
+                    System.out.println("!!!!!!!! GOT A PAIR");
+                    try {       
+                                            System.out.println("!!!!!!!! GOT A PAIR2");
+
+                        responseReference.get();
+                                
+                                                    System.out.println("!!!!!!!! GOT A PAIR3");
+
+                        GenericsUtils.parseType(responseReference.get()).compare(parsedPair.right());
+                    } catch (TypeMismatchException tme) {
+                        if (tme.source.equalsIgnoreCase(PrimitiveTypes.NULL.getRawClass().getName())) {
+                            if (isPrimitive) {
+                                throw new NullNotAllowedException("ExecutionHandler returned NULL while return-value (" 
+                                        + invocationInstance.typeToken().getRawType() 
+                                        + ") is a primitive.", tme);
+                            } else {
+                                
+                                // Let execution fall through as the return type 
+                                // is an Object, and not a primitive, and so can 
+                                // accept a null.
+                            }
+                        } else {
+                            throw new ProcessTimeTypeMismatchException("ExecutionHandler (" 
+                                    + runtimeExecutionHandler.getClass().getCanonicalName() + ") "
+                                    + "outputs do not match expected returnType.", tme);
+                        }
+                    }
+                } else {
+                    System.out.println("!!!!!!!! NO PAIR");
+                }
+            }     
+        } 
+        
         
         // 7.) Optionally, if exception was found during execution then pass to 
         //     errorHandler for marshalling into some other type of Throwable.
@@ -179,6 +297,33 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                 Object newFallbackObject = processFallbackHandler(runtimeFallbackHandler, 
                         invocationInstance, 
                         invocationException);
+                
+                // if necessary check the output of FallbackHandler output to 
+                // ensure type-consistency with the expected returnValue.
+                Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.FALLBACK_HANDLER_TO_RETURN_VALUE_CHECK);
+                if (parsedPair != null) {
+                    try {
+                        GenericsUtils.parseType(newFallbackObject).compare(parsedPair.right());
+                    } catch (TypeMismatchException tme) {
+                        if (tme.source.equalsIgnoreCase(PrimitiveTypes.NULL.getRawClass().getName())) {
+                            if (isPrimitive) {
+                                throw new NullNotAllowedException("FallbackHandler returned NULL while return-value (" 
+                                        + invocationInstance.typeToken().getRawType() 
+                                        + ") is a primitive.", tme);
+                            } else {
+                                
+                                // Let execution fall through as the return type 
+                                // is an Object, and not a primitive, and so can 
+                                // accept a null.
+                            }
+                        } else {
+                            throw new ProcessTimeTypeMismatchException("FallbackHandler (" 
+                                    + runtimeFallbackHandler.getClass().getCanonicalName() + ") "
+                                    + "outputs do not match expected returnType.", tme);
+                        }
+                    }
+                }
+                
                 responseReference.set(newFallbackObject);
                 fallbackInvoked = true;
             } else {
@@ -192,6 +337,33 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             Object newResponseObject = processResponseHandler(runtimeResponseHandler, 
                     responseReference.get(), 
                     invocationInstance);
+            
+            // if necessary check the ResponseHandler output to 
+            // ensure type-consistency with the expected returnValue.
+            Pair<ParsedType, ParsedType> parsedPair = requiredChecks.get(Constants.RESPONSE_HANDLER_TO_RETURN_VALUE_CHECK);
+            if (parsedPair != null) {
+                try {
+                    GenericsUtils.parseType(newResponseObject).compare(parsedPair.right());
+                } catch (TypeMismatchException tme) {
+                    if (tme.source.equalsIgnoreCase(PrimitiveTypes.NULL.getRawClass().getName())) {
+                        if (isPrimitive) {
+                            throw new NullNotAllowedException("ResponseHandler returned NULL while return-value (" 
+                                    + invocationInstance.typeToken().getRawType() 
+                                    + ") is a primitive.", tme);
+                        } else {
+
+                            // Let execution fall through as the return type 
+                            // is an Object, and not a primitive, and so can 
+                            // accept a null.
+                        }
+                    } else {
+                        throw new ProcessTimeTypeMismatchException("ResponseHandler (" 
+                                + runtimeResponseHandler.getClass().getCanonicalName() + ") "
+                                + "outputs do not match expected returnType.", tme);
+                    }
+                }
+            }
+                
             responseReference.set(newResponseObject);
         } 
         
@@ -218,12 +390,12 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             // 2.) A returned NULL executionContext from the RequestHandler 
             //      is only allowed IF the ExecutionHandler has an input of 
             //      type java.lang.Void.
-            if (!genericExecutionType.equals(Primitive.VOID.getRawClass())) {
-                throw new NullPointerException("RequestHandler (" 
-                        + requestHandler.getClass().getCanonicalName() + ") returned NULL while ExecutionHandler '" 
-                        + executionHandler.getClass().getCanonicalName() + "' expects an input of type '" 
-                        + genericExecutionType.getCanonicalName() + "'. This is only allowed if the input is of type '" 
-                        + Primitive.VOID.getRawClass() + "'");
+            if (!genericExecutionType.equals(PrimitiveTypes.VOID.getRawClass())) {
+                throw new NullNotAllowedException("RequestHandler (" 
+                        + requestHandler.getClass().getCanonicalName() + ") returned NULL while ExecutionHandler (" 
+                        + executionHandler.getClass().getCanonicalName() + ") expects an input of type '" 
+                        + genericExecutionType.getCanonicalName() + "'. This is only allowed if the input type is '" 
+                        + PrimitiveTypes.VOID.getRawClass().getName() + "'");
             }
         } 
         
@@ -245,7 +417,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
                 .onFailure(failure -> LOGGER.log(Level.SEVERE, RETRY_FAILED_MESSAGE, failure.getMessage()))
                 .run((ctx) -> { 
                     Object [] loggerParams = {ctx.getExecutions() + 1, invocationInstance.toString()};
-                    LOGGER.log(Level.INFO, RETRY_RUN_MESSAGE, loggerParams);
+                    LOGGER.log(Level.FINE, RETRY_RUN_MESSAGE, loggerParams);
                     Object responseObject = executionHandler.apply(invocationInstance);
                     responseReference.set(responseObject); 
                 });
@@ -267,7 +439,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
             final InvocationInstance invocationInstance,
             Throwable invocationException) {
         try {
-            FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationInstance.returnType(), invocationException);
+            FallbackWrapper fallbackWrapper = FallbackWrapper.newInstance(invocationInstance.typeToken(), invocationException);
             return fallbackHandler.apply(fallbackWrapper);
         } catch (Exception e) {
             throw Throwables.propagate(e);
@@ -277,60 +449,77 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private Object processResponseHandler(final AbstractResponseHandler responseHandler, 
             final Object responseReference,
             final InvocationInstance invocationInstance) {
-        ResponseWrapper<?, ?> responseWrapper = ResponseWrapper.newInstance(responseReference, invocationInstance.context(), invocationInstance.returnType());
+        ResponseWrapper<?, ?> responseWrapper = ResponseWrapper.newInstance(responseReference, invocationInstance.context(), invocationInstance.typeToken());
         return responseHandler.apply(responseWrapper);
     }
     
-    private void checkTypeConsistency(@Nullable AbstractRequestHandler runtimeRequestHandler,
+    private Map<Integer, Pair<ParsedType, ParsedType>> checkTypeConsistency(@Nullable AbstractRequestHandler runtimeRequestHandler,
             AbstractExecutionHandler runtimeExecutionHandler,
             @Nullable AbstractErrorHandler runtimeErrorHandler,
             @Nullable AbstractFallbackHandler runtimeFallbackHandler,
             @Nullable AbstractResponseHandler runtimeResponseHandler,
-            Class expectedReturnType) {
+            Class comparisonSafeReturnType,
+            boolean isReturnTypePrimitive) {
         
         // The only thing guaranteed to be non-null is the ExecutionHandler 
-        // which is why we init it here.
-        Class[] genericExecutionTypes = genericTypes(runtimeExecutionHandler.getClass());
-        Class comparisonSafeReturnType = processorUtils.potentialPrimitiveToClass(expectedReturnType);
-        
+        // which is why we init it here.   
+        final Map<Integer, Pair<ParsedType, ParsedType>> requiredChecks = Maps.newHashMap();
+        ParsedType returnType = GenericsUtils.parseType(comparisonSafeReturnType);        
+        ParsedType executionTypes = GenericsUtils.parseType(runtimeExecutionHandler);
+
         
         // 1.) Check RequestHandler, if applicable, for initial Type as its output  
         //     must match the input of ExecutionHandler.
         if (runtimeRequestHandler != null) {
-            Class[] genericRequestTypes = genericTypes(runtimeRequestHandler.getClass());
-            if (!genericRequestTypes[1].equals(genericExecutionTypes[0])) {
-                throw new TypeMismatchException("RequestHandler (" 
-                        + runtimeRequestHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericRequestTypes[1].getCanonicalName() + "' while ExecutionHandler (" 
-                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") expects an input of type '" 
-                        + genericExecutionTypes[0].getCanonicalName() + "'. These MUST be the same!!!");
+            ParsedType types = GenericsUtils.parseType(runtimeRequestHandler).subTypeAtIndex(1);                        
+            try {
+                int index = types.compare(executionTypes.subTypeAtIndex(0));
+                if(index > 0) {
+                    Pair pair = pairFromParsedTypes(index, types, executionTypes.subTypeAtIndex(0));
+                    requiredChecks.put(Constants.REQUEST_HANDLER_TO_EXECUTION_HANDLER_CHECK, pair);
+                }
+            } catch (TypeMismatchException tme) {
+                throw new CheckTimeTypeMismatchException("RequestHandler (" 
+                        + runtimeRequestHandler.getClass().getCanonicalName() + ") " 
+                        + "outputs do not match ExecutionHandler (" 
+                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") inputs.", tme);
             }
         }
         
         
         // 2.) Check the ErrorHandler input, if applicable, as it must match the 
-        //     the input, that is the context, to the ExecutionHandler.
+        //     the input (which is the context in this case) to the ExecutionHandler.
         if (runtimeErrorHandler != null) {
-            Class[] genericErrorTypes = genericTypes(runtimeErrorHandler.getClass());
-            if (!genericErrorTypes[0].equals(genericExecutionTypes[0])) {
-                throw new TypeMismatchException("ExecutionHandler (" 
-                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") has an input of type '" 
-                        + genericExecutionTypes[0].getCanonicalName() + "' while ErrorHandler (" 
-                        + runtimeErrorHandler.getClass().getCanonicalName() + ") expects an input of type '" 
-                        + genericErrorTypes[0].getCanonicalName() + "'. These MUST be the same!!!");
-            }
+            ParsedType types = GenericsUtils.parseType(runtimeErrorHandler).subTypeAtIndex(0);                        
+            try {
+                int index = executionTypes.subTypeAtIndex(0).compare(types);
+                if (index > 0) {
+                    Pair pair = pairFromParsedTypes(index, executionTypes.subTypeAtIndex(0), types);
+                    requiredChecks.put(Constants.EXECUTION_HANDLER_TO_ERROR_HANDLER_CHECK, pair);
+                }
+            } catch (TypeMismatchException tme) {
+                throw new CheckTimeTypeMismatchException("ExecutionHandler (" 
+                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") " 
+                        + "inputs do not match ErrorHandler (" 
+                        + runtimeErrorHandler.getClass().getCanonicalName() + ") inputs.", tme);
+            }            
         }
 
             
         // 3.) Check the FallbackHandler output, if applicable, as it must match 
         //     the expected returnType.
         if (runtimeFallbackHandler != null) {
-            Class[] genericFallbackTypes = genericTypes(runtimeFallbackHandler.getClass());
-            if (!genericFallbackTypes[0].equals(comparisonSafeReturnType)) {
-                throw new TypeMismatchException("FallbackHandler (" 
-                        + runtimeFallbackHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericFallbackTypes[0].getCanonicalName() + "' while expected returnType is of type '" 
-                        + comparisonSafeReturnType.getCanonicalName() + "'. These MUST be the same!!!");
+            ParsedType types = GenericsUtils.parseType(runtimeFallbackHandler).subTypeAtIndex(0);                        
+            try {
+                int index = types.compare(returnType);
+                if(index > 0 || isReturnTypePrimitive) {
+                    Pair pair = pairFromParsedTypes(index, types, returnType);
+                    requiredChecks.put(Constants.FALLBACK_HANDLER_TO_RETURN_VALUE_CHECK, pair);
+                }
+            } catch (TypeMismatchException tme) {
+                    throw new CheckTimeTypeMismatchException("FallbackHandler (" 
+                            + runtimeFallbackHandler.getClass().getCanonicalName() + ") "
+                            + "outputs do not match expected returnType.", tme);
             } 
         }
 
@@ -341,42 +530,65 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         //     Also check the ResponseHandler output as it must match the 
         //     expected returnType. 
         if (runtimeResponseHandler != null) {
-            Class[] genericResponseTypes = genericTypes(runtimeResponseHandler.getClass());
-            if (!genericResponseTypes[0].equals(genericExecutionTypes[1])) {
-                throw new TypeMismatchException("ExecutionHandler (" 
-                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericExecutionTypes[1].getCanonicalName() + "' while ResponseHandler (" 
-                        + runtimeResponseHandler.getClass().getCanonicalName() + ") expects an input of type '" 
-                        + genericResponseTypes[0].getCanonicalName() + "'. These MUST be the same!!!");
-            } else if (!genericResponseTypes[1].equals(comparisonSafeReturnType)) {
-                throw new TypeMismatchException("ResponseHandler (" 
-                        + runtimeResponseHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericResponseTypes[1].getCanonicalName() + "' while expected returnType is of type '" 
-                        + comparisonSafeReturnType.getCanonicalName() + "'. These MUST be the same!!!");
+            ParsedType types = GenericsUtils.parseType(runtimeResponseHandler);                        
+            try {
+                int index = executionTypes.subTypeAtIndex(1).compare(types.subTypeAtIndex(0));
+                if(index > 0) {
+                    Pair pair = pairFromParsedTypes(index, executionTypes.subTypeAtIndex(1), types.subTypeAtIndex(0));
+                    requiredChecks.put(Constants.EXECUTION_HANDLER_TO_RESPONSE_HANDLER_CHECK, pair);
+                }
+            } catch (TypeMismatchException tme) {
+                throw new CheckTimeTypeMismatchException("ExecutionHandler (" 
+                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") " 
+                        + "outputs do not match ResponseHandler (" 
+                        + runtimeResponseHandler.getClass().getCanonicalName() + ") inputs.", tme);
             } 
-        } else {
             
+            try {
+                int index = types.subTypeAtIndex(1).compare(returnType);
+                if(index > 0 || isReturnTypePrimitive) {
+                    Pair pair = pairFromParsedTypes(index, types.subTypeAtIndex(1), returnType);
+                    requiredChecks.put(Constants.RESPONSE_HANDLER_TO_RETURN_VALUE_CHECK, pair);
+                }
+            } catch (TypeMismatchException tme) {
+                throw new CheckTimeTypeMismatchException("ResponseHandler (" 
+                        + runtimeResponseHandler.getClass().getCanonicalName() + ") "
+                        + "outputs do not match expected returnType.", tme);
+            } 
+            
+        } else {
+                        
             // 5.) If no ResponseHandler was registered then the ExecutionHandler
             //     is required to return the correct returnType.
-            if (runtimeResponseHandler == null && !comparisonSafeReturnType.equals(genericExecutionTypes[1])) { 
-                throw new TypeMismatchException("ExecutionHandler (" 
-                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") has an output of type '" 
-                        + genericExecutionTypes[1].getCanonicalName() + "' while expected returnType is of type (" 
-                        + comparisonSafeReturnType.getCanonicalName() + "'. These MUST be the same!!!");
+            try {
+                int index = executionTypes.subTypeAtIndex(1).compare(returnType);
+                if(index > 0 || isReturnTypePrimitive) {
+                    System.out.println("!!!!!!!! DEFINITELY ADDING: index=" + index);
+                    Pair pair = pairFromParsedTypes(index, executionTypes.subTypeAtIndex(1), returnType);
+                    requiredChecks.put(Constants.EXECUTION_HANDLER_TO_RETURN_VALUE_CHECK, pair);   
+                }
+            } catch (TypeMismatchException tme) {
+                throw new CheckTimeTypeMismatchException("ExecutionHandler (" 
+                        + runtimeExecutionHandler.getClass().getCanonicalName() + ") "
+                        + "outputs do not match expected returnType.", tme);
             }
         }
+        
+        return requiredChecks;
     }
     
-    /**
-     * Because checking for generic type consistency between handlers is 
-     * an expensive operation we ONLY want to do so once and cache all 
-     * types found for a given class.
-     * 
-     * @param methodClassKey key used to query if we've already done a type-check.
-     * @return non-null Boolean if we've previously checked otherwise null.
-     */
-    private Boolean previouslyCheckedTypeConsistency(String methodClassKey) {
-        return (Boolean) RUNTIME_METADATA.asMap().putIfAbsent(methodClassKey, Boolean.TRUE);
+    private Pair<ParsedType, ParsedType> pairFromParsedTypes(int comparisonValue, ParsedType source, ParsedType target) {
+        switch(comparisonValue) {
+            case 0:
+                return Pair.of(source, target);
+            case 1:
+                return Pair.of(source, target);
+            case 2:
+                return Pair.of(source, target);
+            case 3:
+                return Pair.of(source, target);
+        }
+        return null;
     }
     
     /**
@@ -387,10 +599,9 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
      */
     private Class[] genericTypes(Class genericTypeClass) {        
         try {
-            //RUNTIME_METADATA.g
             return (Class[]) RUNTIME_METADATA.get(genericTypeClass.getName(), () -> {
-                LOGGER.log(Level.INFO, GENERIC_TYPE_CACHE_MESSAGE, genericTypeClass.getName());
-                return processorUtils.getGenericClassTypes(genericTypeClass);
+                LOGGER.log(Level.CONFIG, GENERIC_TYPE_CACHE_MESSAGE, genericTypeClass.getName());
+                return processorUtils.getGenericTypesAsClasses(genericTypeClass);
             });
         } catch (ExecutionException ex) {
             throw Throwables.propagate(ex);
@@ -400,7 +611,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
     private Object getInstance(Class clazz) {
         Object instance;
         try {
-            return (clazz.equals(Primitive.VOID.getRawClass())) ? null : injector.getInstance(clazz);                
+            return (clazz.equals(PrimitiveTypes.VOID.getRawClass())) ? null : injector.getInstance(clazz);                
         } catch (Exception e) {
             instance = processorUtils.newClassInstance(clazz);
             injector.injectMembers(instance);
