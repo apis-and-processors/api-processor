@@ -70,7 +70,7 @@ public class ParsedType implements Comparable<ParsedType> {
      * @param target
      * @return 
      */
-    private int compare(ParsedType source, ParsedType target) {      
+    private static int compare(ParsedType source, ParsedType target) {      
         if(source.mainType.equals(target.mainType)) {            
             int sourceSize = source.subTypes().size();
             int targetSize = target.subTypes().size();
@@ -114,7 +114,7 @@ public class ParsedType implements Comparable<ParsedType> {
         }        
     }
     
-    private boolean isTypeUnknown(String possiblyUnknownType) {
+    private static boolean isTypeUnknown(String possiblyUnknownType) {
         if (!possiblyUnknownType.equals(Constants.OBJECT_CLASS)) {
             try {
                 GenericTypes.valueOf(possiblyUnknownType);                
