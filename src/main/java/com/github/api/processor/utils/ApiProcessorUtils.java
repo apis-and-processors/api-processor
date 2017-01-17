@@ -18,24 +18,17 @@
 package com.github.api.processor.utils;
 
 import com.github.api.processor.generics.PrimitiveTypes;
-import com.github.api.processor.generics.ParsedType;
-import com.github.api.processor.handlers.AbstractRequestHandler;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Singleton;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**

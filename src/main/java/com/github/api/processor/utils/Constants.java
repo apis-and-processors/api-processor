@@ -20,8 +20,11 @@ public class Constants {
     public static final char GREATER_THAN_CHAR = '<';
     public static final char LESS_THAN_CHAR = '>';
     public static final char COMMA_CHAR = ',';
-    public static final char SPACE_CHAR = ' ';   
+    public static final char SPACE_CHAR = ' '; 
     
+    public static final String CLASS_REGEX = "^(public|private|protected) .+";
+    public static final String SPACE_STRING = " ";
+    public static final String NULL_STRING = "null";
     
     public static final int REQUEST_HANDLER_TO_EXECUTION_HANDLER_CHECK = 0;
     public static final int EXECUTION_HANDLER_TO_ERROR_HANDLER_CHECK = 1;

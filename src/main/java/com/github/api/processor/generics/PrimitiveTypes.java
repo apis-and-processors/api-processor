@@ -5,6 +5,8 @@
  */
 package com.github.api.processor.generics;
 
+import com.github.api.processor.utils.Constants;
+
 /**
  *
  * @author dancc
@@ -39,11 +41,11 @@ public enum PrimitiveTypes {
     }
 
     public static PrimitiveTypes fromName(Object name) {
-        return name == null ? fromName("null") : fromName(name.toString());
+        return name == null ? PrimitiveTypes.NULL : fromName(name.toString());
     }
         
     public static PrimitiveTypes fromName(String name) {
-        return (name == null || name.trim().equalsIgnoreCase("null")) 
+        return (name == null || name.trim().equalsIgnoreCase(Constants.NULL_STRING)) 
                 ? PrimitiveTypes.NULL 
                 : PrimitiveTypes.valueOf(name.toUpperCase().intern());
     }

@@ -14,46 +14,46 @@ import java.util.List;
  *
  * @author dancc
  */
-public class ParsedType implements Comparable<ParsedType> {
+public class ClassType implements Comparable<ClassType> {
 
-    private final String mainType;
-    private final ParsedType parentType;
-    private final List<ParsedType> subTypes = Lists.newArrayList();
+    private final String name;
+    private final ClassType parent;
+    private final List<ClassType> subTypes = Lists.newArrayList();
 
-    public ParsedType(String mainType, ParsedType parentType) {
-        this.mainType = mainType;
-        this.parentType = parentType;
+    public ClassType(String name, ClassType parent) {
+        this.name = name;
+        this.parent = parent;
     }  
 
-    public ParsedType add(ParsedType genericTypes) {
-        if (genericTypes != null) {
-            subTypes.add(genericTypes);
+    public ClassType add(ClassType classType) {
+        if (classType != null) {
+            subTypes.add(classType);
         }
         return this;
     }
     
-    public String mainType() {
-        return mainType;
+    public String name() {
+        return name;
     }
        
-    public ParsedType parentType() {
-        return parentType;
+    public ClassType parent() {
+        return parent;
     }
         
-    public List<ParsedType> subTypes() {
+    public List<ClassType> subTypes() {
         return subTypes;    
     }
     
-    public ParsedType subTypeAtIndex(int index) {
+    public ClassType subTypeAtIndex(int index) {
         return subTypes.get(index);
     }
     
-    public int compare(ParsedType compareTo) {
+    public int compare(ClassType compareTo) {
         return compare(this, compareTo);
     }
     
     @Override
-    public int compareTo(ParsedType compareTo) {
+    public int compareTo(ClassType compareTo) {
         try {
             return compare(this, compareTo);
         } catch (TypeMismatchException e) {
@@ -70,8 +70,8 @@ public class ParsedType implements Comparable<ParsedType> {
      * @param target
      * @return 
      */
-    private static int compare(ParsedType source, ParsedType target) {      
-        if(source.mainType.equals(target.mainType)) {            
+    private static int compare(ClassType source, ClassType target) {      
+        if(source.name.equals(target.name)) {            
             int sourceSize = source.subTypes().size();
             int targetSize = target.subTypes().size();
             if (sourceSize == targetSize) {
@@ -96,20 +96,20 @@ public class ParsedType implements Comparable<ParsedType> {
                 return counter;
             } else {
                 throw new TypeMismatchException("Source type '" 
-                    + source.mainType + "' has " + sourceSize + " subTypes while '" 
-                    + target.mainType + "' has " + targetSize + " subTypes", 
-                        source.mainType, target.mainType); 
+                    + source.name + "' has " + sourceSize + " subTypes while '" 
+                    + target.name + "' has " + targetSize + " subTypes", 
+                        source.name, target.name); 
             }
         } else {
-            if (isTypeUnknown(source.mainType)) {
+            if (isTypeUnknown(source.name)) {
                 return 1;
-            } else if(isTypeUnknown(target.mainType)) {
+            } else if(isTypeUnknown(target.name)) {
                 return 2;
             } else {
                 throw new TypeMismatchException("Source type '" 
-                    + source.mainType + "' does not match target type '" 
-                    + target.mainType + "'", 
-                        source.mainType, target.mainType);
+                    + source.name + "' does not match target type '" 
+                    + target.name + "'", 
+                        source.name, target.name);
             }
         }        
     }
@@ -125,8 +125,8 @@ public class ParsedType implements Comparable<ParsedType> {
         return true;
     }
     
-    private static void print(ParsedType genericTypes, StringBuilder builder) {
-        builder.append(genericTypes.mainType);
+    private static void print(ClassType genericTypes, StringBuilder builder) {
+        builder.append(genericTypes.name);
         if (genericTypes.subTypes().size() > 0) {
             builder.append(Constants.GREATER_THAN);
             int size = genericTypes.subTypes().size();
