@@ -17,7 +17,7 @@
 
 package com.github.api.processor.utils;
 
-import com.github.api.processor.generics.PrimitiveTypes;
+import com.github.type.utils.PrimitiveTypes;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Throwables;

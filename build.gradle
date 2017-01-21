@@ -32,15 +32,13 @@ repositories {
 
 dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1'
-    compile 'com.google.guava:guava:20.0'
     compile 'com.google.inject:guice:4.1.0'
     compile 'io.github.lukehutch:fast-classpath-scanner:2.0.6'
     compile 'javax.inject:javax.inject:1'
     compile 'net.jodah:failsafe:1.0.0'
+    compile 'com.github:type-utils:0.0.1-SNAPSHOT'
     compile 'org.slf4j:slf4j-api:1.7.21'
 
-    testCompile ('ch.qos.logback:logback-core:1.1.2') 
-    testCompile ('ch.qos.logback:logback-classic:1.1.2')
     testCompile ('org.testng:testng:6.8.21') 
     testCompile ('org.assertj:assertj-core:1.7.0') 
 }
