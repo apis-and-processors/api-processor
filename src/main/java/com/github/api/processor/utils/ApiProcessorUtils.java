@@ -41,9 +41,6 @@ public class ApiProcessorUtils {
     private static final String CLASS_ANNO_NULL = "class annotataion cannot be null";
     private static final String CLASS_ANNO_REQUIRED = "class must be an annotation";
     private static final String POTENTIAL_PRIMITIVE_NULL = "potentialPrimitive class cannot be null";
-
-    private static final Object [] EMPTY_OBJECT_ARRAY = new Object[1];
-    private static final Constructor OBJECT_CONSTRUCTOR = Object.class.getDeclaredConstructors()[0];
     
     /**
      * Find all classes on the path annotated with given annotation.
@@ -60,40 +57,7 @@ public class ApiProcessorUtils {
                     builtApis.add(c);
                 }).scan();
         return builtApis;
-    }
-    
-    public <T> T newInterfaceInstance(Class<T> beanInterface) {   
-        try {
-            Constructor genericConstructor = sun.reflect.ReflectionFactory
-                    .getReflectionFactory()
-                    .newConstructorForSerialization(beanInterface, OBJECT_CONSTRUCTOR);
-
-            return beanInterface.cast(genericConstructor.newInstance()); 
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
-            throw Throwables.propagate(ex);
-        } 
-    }     
-    
-    public <T> T newClassInstance(Class<T> beanClass) {   
-        try {
-            Constructor noArgConstructor = beanClass.getDeclaredConstructors()[0];
-            noArgConstructor.setAccessible(true);
-            
-            if (Number.class.isAssignableFrom(beanClass)) {
-                return beanClass.cast(noArgConstructor.newInstance(0));     
-            } else {
-                return beanClass.cast(noArgConstructor.newInstance(EMPTY_OBJECT_ARRAY));     
-            }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | SecurityException | IllegalArgumentException ex) {
-            
-            // second attempt at creating generic object from class
-            try {
-                return beanClass.newInstance();
-            } catch (Exception e) {
-                throw Throwables.propagate(e);
-            }
-        } 
-    }   
+    } 
         
     public Class[] getGenericTypesAsClasses(Class clazz) {
         TypeToken.TypeSet genericType = TypeToken.of(clazz).getTypes();

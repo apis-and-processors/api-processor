@@ -32,6 +32,7 @@ import com.github.api.processor.instance.ClassInstance;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.instance.MethodInstance;
 import com.github.api.processor.utils.ApiProcessorUtils;
+import com.github.type.utils.ReflectionUtils;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -126,7 +127,7 @@ public class ApiProcessorCache {
         try {
             return (T) cache.get(key, () -> {
                 LOGGER.log(Level.CONFIG, TYPE_CACHE_MESSAGE, key);
-                return apiProcessorUtils.newInterfaceInstance(beanClass);
+                return ReflectionUtils.newInstance(beanClass);
             });
         } catch (ExecutionException ex) {
             throw Throwables.propagate(ex);

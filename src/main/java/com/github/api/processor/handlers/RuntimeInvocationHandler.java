@@ -23,16 +23,17 @@ import com.github.api.processor.annotations.Delegate;
 import com.github.api.processor.wrappers.ResponseWrapper;
 import com.github.api.processor.instance.InvocationInstance;
 import com.github.api.processor.cache.ApiProcessorCache;
-import com.github.api.processor.exceptions.CheckTimeTypeMismatchException;
 import com.github.api.processor.exceptions.NullNotAllowedException;
-import com.github.api.processor.exceptions.ProcessTimeTypeMismatchException;
 import com.github.api.processor.utils.ApiProcessorUtils;
 import com.github.api.processor.utils.Constants;
 import com.github.api.processor.utils.Pair;
 import com.github.api.processor.wrappers.ErrorWrapper;
 import com.github.api.processor.wrappers.FallbackWrapper;
+import com.github.pipeline.processor.exceptions.CheckTimeTypeMismatchException;
+import com.github.pipeline.processor.exceptions.ProcessTimeTypeMismatchException;
 import com.github.type.utils.ClassType;
 import com.github.type.utils.PrimitiveTypes;
+import com.github.type.utils.ReflectionUtils;
 import com.github.type.utils.TypeUtils;
 import com.github.type.utils.exceptions.TypeMismatchException;
 import com.google.common.base.Throwables;
@@ -613,7 +614,7 @@ public class RuntimeInvocationHandler extends AbstractRuntimeInvocationHandler {
         try {
             return (clazz.equals(PrimitiveTypes.VOID.getRawClass())) ? null : injector.getInstance(clazz);                
         } catch (Exception e) {
-            instance = processorUtils.newClassInstance(clazz);
+            instance = ReflectionUtils.newInstance(clazz);
             injector.injectMembers(instance);
         }
         return instance;
